@@ -22,45 +22,148 @@ const N8N_WEBHOOK_URL = import.meta.env.VITE_N8N_WEBHOOK_URL || '';
 // App ID para separar datos
 const appId = import.meta.env.VITE_APP_ID || 'coffee-break-udesa';
 
-// Tipos de Bocados disponibles para seleccionar
+// ========== MENÚ DE BOCADOS ACTUALIZADO - OCTUBRE 2025 ==========
 const menuItems = [
-    // CATEGORÍA FACTURAS (Usada en Combo 2)
-    { type: 'bocadoFactura', name: 'Medialunas (Factura)', price: 100 },
-    { type: 'bocadoFactura', name: 'Libritos (Factura)', price: 100 },
-    { type: 'bocadoFactura', name: 'Coquitos (Factura)', price: 100 },
-    { type: 'bocadoFactura', name: 'Churrinche (Factura)', price: 100 },
+    // ===== CATEGORÍA FACTURAS (Usada en Combo 2) =====
+    { type: 'bocadoFactura', name: 'Medialuna de Manteca 🆕', price: 100 },
+    { type: 'bocadoFactura', name: 'Medialuna de Grasa 🆕', price: 100 },
+    { type: 'bocadoFactura', name: 'Librito', price: 100 },
+    { type: 'bocadoFactura', name: 'Churrinche', price: 100 },
+    { type: 'bocadoFactura', name: 'Dona Bañada Chocolate 🆕', price: 100 },
+    { type: 'bocadoFactura', name: 'Dona Bañada Rosa 🆕', price: 100 },
+    { type: 'bocadoFactura', name: 'Sacramento 🆕', price: 100 },
 
-    // CATEGORÍA BOCADOS SIMPLES (Usada en Combo 3, 7, 8)
-    { type: 'bocadoSimple', name: 'Budin Marmolado (Simple)', price: 120 },
-    { type: 'bocadoSimple', name: 'Budin Banana y Nuez (Simple)', price: 120 },
-    { type: 'bocadoSimple', name: 'Cuadradito Brownie (Simple)', price: 120 },
-    { type: 'bocadoSimple', name: 'Cuadradito Pasta Frola (Simple)', price: 120 },
-    { type: 'bocadoSimple', name: 'Sandwich Miga Blanco (Simple)', price: 120 },
-    { type: 'bocadoSimple', name: 'Sandwich Miga Negro (Simple)', price: 120 },
-    { type: 'bocadoSimple', name: 'Shot Ensalada Frutas (Simple)', price: 150 },
-    { type: 'bocadoSimple', name: 'Fruta de Estación (Simple)', price: 150 },
-    { type: 'bocadoSimple', name: 'Barrita de Cereal (Simple)', price: 150 },
+    // ===== CATEGORÍA BOCADOS SIMPLES (Usada en Combo 3, 7, 8) =====
+    { type: 'bocadoSimple', name: 'Medialuna de Manteca', price: 120 },
+    { type: 'bocadoSimple', name: 'Medialuna de Grasa', price: 120 },
+    { type: 'bocadoSimple', name: 'Librito', price: 120 },
+    { type: 'bocadoSimple', name: 'Churrinche', price: 120 },
+    { type: 'bocadoSimple', name: 'Dona Bañada Chocolate 🆕', price: 120 },
+    { type: 'bocadoSimple', name: 'Dona Bañada Rosa 🆕', price: 120 },
+    { type: 'bocadoSimple', name: 'Sacramento 🆕', price: 120 },
+    { type: 'bocadoSimple', name: 'Madeleine Bañada en Chocolate 🆕', price: 120 },
+    { type: 'bocadoSimple', name: 'Rosquita de Frutilla/Arándano 🆕', price: 120 },
+    { type: 'bocadoSimple', name: 'Cake de Manzana 🆕', price: 120 },
+    { type: 'bocadoSimple', name: 'Mini Budín de Limón y Amapola con Glace 🆕', price: 120 },
+    { type: 'bocadoSimple', name: 'Mini Budín de Choco con Naranja 🆕', price: 120 },
+    { type: 'bocadoSimple', name: 'Mini Budín Choco Bañado en Choco 🆕', price: 120 },
+    { type: 'bocadoSimple', name: 'Pepa de Membrillo 🆕', price: 120 },
+    { type: 'bocadoSimple', name: 'Budín Marmolado', price: 120 },
+    { type: 'bocadoSimple', name: 'Budín Banana y Nuez', price: 120 },
+    { type: 'bocadoSimple', name: 'Budín Limón y Amapola', price: 120 },
+    { type: 'bocadoSimple', name: 'Cuadradito Brownie', price: 120 },
+    { type: 'bocadoSimple', name: 'Cuadradito Pasta Frola', price: 120 },
+    { type: 'bocadoSimple', name: 'Cuadradito Coco y Dulce de Leche', price: 120 },
+    { type: 'bocadoSimple', name: 'Cookie Red Velvet', price: 120 },
+    { type: 'bocadoSimple', name: 'Cookie Choco', price: 120 },
+    { type: 'bocadoSimple', name: 'Cookie Chips Choco', price: 120 },
+    { type: 'bocadoSimple', name: 'Cookie Vegana', price: 120 },
+    { type: 'bocadoSimple', name: 'Cookie Chocolate (Sin TACC) 🌾', price: 120 },
+    { type: 'bocadoSimple', name: 'Cookie de Vainilla (Sin TACC) 🌾', price: 120 },
+    { type: 'bocadoSimple', name: 'Cuadradito de Pasta Frola (Sin TACC) 🌾', price: 120 },
+    { type: 'bocadoSimple', name: 'Roll de Jamón y Queso (Sin TACC) 🌾', price: 120 },
+    { type: 'bocadoSimple', name: 'Alfajorcito Sable', price: 120 },
+    { type: 'bocadoSimple', name: 'Alfajorcito Choco', price: 120 },
+    { type: 'bocadoSimple', name: 'Alfajorcito Maicena', price: 120 },
+    { type: 'bocadoSimple', name: 'Sandwich de Miga Blanco', price: 120 },
+    { type: 'bocadoSimple', name: 'Sandwich de Miga Negro', price: 120 },
+    { type: 'bocadoSimple', name: 'Shot de Ensalada de Frutas', price: 150 },
+    { type: 'bocadoSimple', name: 'Shot de Yogurt con Granola', price: 150 },
+    { type: 'bocadoSimple', name: 'Pinchos de Frutas 🆕', price: 150 },
+    { type: 'bocadoSimple', name: 'Fruta de Estación', price: 150 },
+    { type: 'bocadoSimple', name: 'Barrita de Cereal', price: 150 },
     
-    // CATEGORÍA BOCADOS SALADOS SIMPLES (Usada en Combo 8)
-    { type: 'bocadoSaladoSimple', name: 'Medialuna J/Q (Simple Salado)', price: 180 },
-    { type: 'bocadoSaladoSimple', name: 'Petit Pain J/Q (Simple Salado)', price: 180 },
+    // ===== CATEGORÍA BOCADOS SALADOS SIMPLES (Usada en Combo 8) =====
+    { type: 'bocadoSaladoSimple', name: 'Medialuna con Jamón y Queso', price: 180 },
+    { type: 'bocadoSaladoSimple', name: 'Chipacito de Queso', price: 180 },
+    { type: 'bocadoSaladoSimple', name: 'Scon de Queso', price: 180 },
+    { type: 'bocadoSaladoSimple', name: 'Sandwich de Miga Blanco', price: 180 },
+    { type: 'bocadoSaladoSimple', name: 'Sandwich de Miga Negro', price: 180 },
+    { type: 'bocadoSaladoSimple', name: 'Petit Pains Jamón y Queso', price: 180 },
+    { type: 'bocadoSaladoSimple', name: 'Petit Pain Lomito y Queso Danbo 🆕', price: 180 },
+    { type: 'bocadoSaladoSimple', name: 'Petit Pain Bondiola y Queso 🆕', price: 180 },
+    { type: 'bocadoSaladoSimple', name: 'Petit Pain Tomate y Queso 🆕', price: 180 },
+    { type: 'bocadoSaladoSimple', name: 'Petit Pain Lechuga y Queso 🆕', price: 180 },
+    { type: 'bocadoSaladoSimple', name: 'Petit Pain Queso y Aceituna 🆕', price: 180 },
+    { type: 'bocadoSaladoSimple', name: 'Petit Pain Tomate Cherry, Mozzarella y Albahaca 🆕', price: 180 },
+    { type: 'bocadoSaladoSimple', name: 'Pinchos de Tomate Cherry + Jamón + Queso + Aceituna 🆕', price: 180 },
+    { type: 'bocadoSaladoSimple', name: 'Pinchos de Tomate Cherry + Mozzarella + Albahaca 🆕', price: 180 },
 
-    // CATEGORÍA BOCADOS ESPECIALES (Amplia, usada en Combo 4, 6, 9)
-    // Subconjunto Dulce de Especiales
-    { type: 'bocadoEspecialDulce', name: 'Cookie Chip Chocolate (Esp. Dulce)', price: 200 },
-    { type: 'bocadoEspecialDulce', name: 'Cookie Red Velvet (Esp. Dulce)', price: 200 },
-    { type: 'bocadoEspecialDulce', name: 'Alfajorcito de Maicena (Esp. Dulce)', price: 180 },
-    { type: 'bocadoEspecialDulce', name: 'Shot Yogurt con Granola (Esp. Dulce)', price: 250 },
-    // Subconjunto Salado de Especiales
-    { type: 'bocadoEspecialSalado', name: 'Mini Wrap J/Q (Esp. Salado)', price: 280 },
-    { type: 'bocadoEspecialSalado', name: 'Mini Wrap Pollo (Esp. Salado)', price: 280 },
-    { type: 'bocadoEspecialSalado', name: 'Empanada de Carne (Esp. Salado)', price: 300 },
-    { type: 'bocadoEspecialSalado', name: 'Empanada de Verdura (Esp. Salado)', price: 300 },
-    { type: 'bocadoEspecialSalado', name: 'Pizzeta (Esp. Salado)', price: 350 },
+    // ===== CATEGORÍA BOCADOS ESPECIALES DULCES (Usada en Combo 4, 6, 9) =====
+    { type: 'bocadoEspecialDulce', name: 'Medialuna de Manteca', price: 200 },
+    { type: 'bocadoEspecialDulce', name: 'Medialuna de Grasa', price: 200 },
+    { type: 'bocadoEspecialDulce', name: 'Librito', price: 200 },
+    { type: 'bocadoEspecialDulce', name: 'Churrinche', price: 200 },
+    { type: 'bocadoEspecialDulce', name: 'Dona Bañada Chocolate 🆕', price: 200 },
+    { type: 'bocadoEspecialDulce', name: 'Dona Bañada Rosa 🆕', price: 200 },
+    { type: 'bocadoEspecialDulce', name: 'Sacramento 🆕', price: 200 },
+    { type: 'bocadoEspecialDulce', name: 'Madeleine Bañada 🆕', price: 200 },
+    { type: 'bocadoEspecialDulce', name: 'Rosquita Rellena de Frutilla/Arándano 🆕', price: 200 },
+    { type: 'bocadoEspecialDulce', name: 'Cake de Manzana 🆕', price: 200 },
+    { type: 'bocadoEspecialDulce', name: 'Mini Budín de Limón y Amapola con Glace 🆕', price: 200 },
+    { type: 'bocadoEspecialDulce', name: 'Mini Budín de Choco con Naranja 🆕', price: 200 },
+    { type: 'bocadoEspecialDulce', name: 'Mini Budín Choco Bañado en Choco 🆕', price: 200 },
+    { type: 'bocadoEspecialDulce', name: 'Pepa de Membrillo 🆕', price: 200 },
+    { type: 'bocadoEspecialDulce', name: 'Budín Marmolado', price: 200 },
+    { type: 'bocadoEspecialDulce', name: 'Budín Banana y Nuez', price: 200 },
+    { type: 'bocadoEspecialDulce', name: 'Budín Limón y Amapola', price: 200 },
+    { type: 'bocadoEspecialDulce', name: 'Cuadradito de Brownie', price: 200 },
+    { type: 'bocadoEspecialDulce', name: 'Cuadradito de Pasta Frola', price: 200 },
+    { type: 'bocadoEspecialDulce', name: 'Cuadradito de Coco y Dulce de Leche', price: 200 },
+    { type: 'bocadoEspecialDulce', name: 'Cookie de Chip de Chocolate', price: 200 },
+    { type: 'bocadoEspecialDulce', name: 'Cookie de Chocolate', price: 200 },
+    { type: 'bocadoEspecialDulce', name: 'Cookie Red Velvet', price: 200 },
+    { type: 'bocadoEspecialDulce', name: 'Cookie Vegana', price: 200 },
+    { type: 'bocadoEspecialDulce', name: 'Chipacito de Queso', price: 200 },
+    { type: 'bocadoEspecialDulce', name: 'Scon de Queso', price: 200 },
+    { type: 'bocadoEspecialDulce', name: 'Sandwich de Miga Blanco', price: 200 },
+    { type: 'bocadoEspecialDulce', name: 'Sandwich de Miga Negro', price: 200 },
+    { type: 'bocadoEspecialDulce', name: 'Alfajorcito de Maicena', price: 180 },
+    { type: 'bocadoEspecialDulce', name: 'Alfajorcito Sablé', price: 180 },
+    { type: 'bocadoEspecialDulce', name: 'Alfajorcito de Chocolate', price: 180 },
+    { type: 'bocadoEspecialDulce', name: 'Shot de Ensalada de Frutas', price: 250 },
+    { type: 'bocadoEspecialDulce', name: 'Shot de Yogurt con Granola', price: 250 },
+    { type: 'bocadoEspecialDulce', name: 'Pinchos de Frutas 🆕', price: 250 },
+    { type: 'bocadoEspecialDulce', name: 'Fruta de Estación', price: 250 },
+    { type: 'bocadoEspecialDulce', name: 'Barrita de Cereal', price: 250 },
 
-    // CATEGORÍA SHOTS DULCES (Usada en Combo 9)
-    { type: 'shotDulce', name: 'Shot Dulce Chocolate', price: 180 },
-    { type: 'shotDulce', name: 'Shot Dulce Fruta', price: 180 },
+    // ===== CATEGORÍA BOCADOS ESPECIALES SALADOS (Usada en Combo 5, 7, 9) =====
+    { type: 'bocadoEspecialSalado', name: 'Mini Wrap de Jamón y Queso', price: 280 },
+    { type: 'bocadoEspecialSalado', name: 'Mini Wrap de Pollo', price: 280 },
+    { type: 'bocadoEspecialSalado', name: 'Mini Wrap de Carne', price: 280 },
+    { type: 'bocadoEspecialSalado', name: 'Mini Wrap Vegetariano', price: 280 },
+    { type: 'bocadoEspecialSalado', name: 'Empanada de Carne', price: 300 },
+    { type: 'bocadoEspecialSalado', name: 'Empanada de Pollo', price: 300 },
+    { type: 'bocadoEspecialSalado', name: 'Empanada de Jamón y Queso', price: 300 },
+    { type: 'bocadoEspecialSalado', name: 'Empanada de Verdura', price: 300 },
+    { type: 'bocadoEspecialSalado', name: 'Triángulos de Queso con Semillas de Sésamo 🆕', price: 300 },
+    { type: 'bocadoEspecialSalado', name: 'Pizzeta Tomate y Mozzarella (Sin TACC) 🌾', price: 350 },
+    { type: 'bocadoEspecialSalado', name: 'Medialuna de Jamón y Queso', price: 280 },
+    { type: 'bocadoEspecialSalado', name: 'Petit Pains de Jamón y Queso', price: 280 },
+    { type: 'bocadoEspecialSalado', name: 'Petit Pain Lomito y Queso Danbo', price: 280 },
+    { type: 'bocadoEspecialSalado', name: 'Petit Pain Bondiola y Queso', price: 280 },
+    { type: 'bocadoEspecialSalado', name: 'Petit Pain Tomate y Queso', price: 280 },
+    { type: 'bocadoEspecialSalado', name: 'Petit Pain Lechuga y Queso', price: 280 },
+    { type: 'bocadoEspecialSalado', name: 'Petit Pain Queso y Aceituna', price: 280 },
+    { type: 'bocadoEspecialSalado', name: 'Petit Pain Tomate Cherry, Mozzarella y Albahaca', price: 280 },
+    { type: 'bocadoEspecialSalado', name: 'Sandwich de Miga Jamón Crudo y Queso 🆕', price: 280 },
+    { type: 'bocadoEspecialSalado', name: 'Sandwich de Miga Queso y Aceituna 🆕', price: 280 },
+    { type: 'bocadoEspecialSalado', name: 'Sandwich de Miga Huevo y Queso 🆕', price: 280 },
+    { type: 'bocadoEspecialSalado', name: 'Sandwich de Miga Jamón y Lechuga 🆕', price: 280 },
+    { type: 'bocadoEspecialSalado', name: 'Roll de Jamón y Queso (Sin TACC) 🌾🆕', price: 280 },
+    { type: 'bocadoEspecialSalado', name: 'Sandwich de Chipa de Jamón y Queso (Sin TACC) 🌾🆕', price: 280 },
+    { type: 'bocadoEspecialSalado', name: 'Sandwich de Miga Jamón y Tomate 🆕', price: 280 },
+    { type: 'bocadoEspecialSalado', name: 'Sandwich de Miga Queso y Tomate 🆕', price: 280 },
+    { type: 'bocadoEspecialSalado', name: 'Sandwich de Miga Queso y Roquefort 🆕', price: 280 },
+    { type: 'bocadoEspecialSalado', name: 'Sandwich de Miga Queso y Lechuga 🆕', price: 280 },
+    { type: 'bocadoEspecialSalado', name: 'Sacramento de Jamón y Queso 🆕', price: 280 },
+    { type: 'bocadoEspecialSalado', name: 'Pinchos de Tomate Cherry + Jamón + Queso + Aceituna 🆕', price: 280 },
+    { type: 'bocadoEspecialSalado', name: 'Pinchos de Tomate Cherry + Mozzarella + Albahaca 🆕', price: 280 },
+
+    // ===== CATEGORÍA SHOTS DULCES (Usada en Combo 9) =====
+    { type: 'shotDulce', name: 'Shot Dulce - Lemon Pie 🆕', price: 180 },
+    { type: 'shotDulce', name: 'Shot Dulce - Chocotorta 🆕', price: 180 },
+    { type: 'shotDulce', name: 'Shot Dulce - Red Velvet 🆕', price: 180 },
 ];
 
 // Definición de paquetes base (Combos actualizados con precio POR PERSONA)
@@ -207,14 +310,16 @@ const packages = [
   },
 ];
 
-// Definición de add-ons/extras
+// Definición de add-ons/extras actualizados
 const addons = [
-  { name: 'Agua mineral 1.5lts', price: 2100 },
-  { name: 'Gaseosa grande 2.25lts', price: 4500 },
-  { name: 'Jugo Cepita x litro', price: 2500 },
-  { name: 'Bocaditos salados (bandeja)', price: 2200 },
-  { name: 'Frutas frescas (bandeja)', price: 1300 },
-  { name: 'Yogurt bebible frutilla/vainilla x litro', price: 5500 },
+  { name: 'Yogurt Bebible Frutilla/Vainilla (Jarra x Litro)', price: 5500 },
+  { name: 'Agua Mineral Grande 1.5lts', price: 2100 },
+  { name: 'Agua Mineral Chica', price: 1500 },
+  { name: 'Gaseosa Grande', price: 4500 },
+  { name: 'Jugo Cepita x Litro', price: 2500 },
+  { name: 'Bocaditos Salados', price: 2200 },
+  { name: 'Bocaditos Dulces', price: 650 },
+  { name: 'Frutas', price: 1300 },
   { name: 'Personal de Apoyo: Jornada 3 hs', price: 21000 },
   { name: 'Personal de Apoyo: Jornada 6 hs', price: 23000 },
   { name: 'Personal de Apoyo: Jornada 9 hs', price: 27000 },
@@ -813,7 +918,7 @@ const App = () => {
                         />
 
                         <BocadoSelector
-                            title="Shots Dulces (Chocolate o Fruta)"
+                            title="Shots Dulces (Lemon Pie, Chocotorta, Red Velvet)"
                             itemTypes={['shotDulce']}
                             maxTotalPerAttendee={selectedPackage.shotDulceCount || 0}
                             formData={formData}
