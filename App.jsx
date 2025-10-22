@@ -1,25 +1,21 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, signOut } from 'firebase/auth';
+import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
 import { getFirestore, collection, query, addDoc, onSnapshot, orderBy, serverTimestamp } from 'firebase/firestore';
 import React, { useState, useEffect, useMemo } from 'react';
-import { getDoc, doc, updateDoc } from 'firebase/firestore'; 
 
 // --- CONFIGURACIÓN DE FIREBASE Y DATA ---
 
-// Variables de entorno para Vercel
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
   storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
-// URL del Webhook de n8n o Make
 const N8N_WEBHOOK_URL = import.meta.env.VITE_N8N_WEBHOOK_URL || '';
-
-// App ID para separar datos
 const appId = import.meta.env.VITE_APP_ID || 'coffee-break-udesa';
 
 // ========== MENÚ DE BOCADOS ACTUALIZADO - OCTUBRE 2025 ==========
@@ -61,19 +57,18 @@ const menuItems = [
     { type: 'bocadoSimple', name: 'Cookie Chocolate (Sin TACC) 🌾', price: 120 },
     { type: 'bocadoSimple', name: 'Cookie de Vainilla (Sin TACC) 🌾', price: 120 },
     { type: 'bocadoSimple', name: 'Cuadradito de Pasta Frola (Sin TACC) 🌾', price: 120 },
-    { type: 'bocadoSimple', name: 'Roll de Jamón y Queso (Sin TACC) 🌾', price: 120 },
     { type: 'bocadoSimple', name: 'Alfajorcito Sable', price: 120 },
     { type: 'bocadoSimple', name: 'Alfajorcito Choco', price: 120 },
     { type: 'bocadoSimple', name: 'Alfajorcito Maicena', price: 120 },
-    { type: 'bocadoSimple', name: 'Sandwich de Miga Blanco', price: 120 },
-    { type: 'bocadoSimple', name: 'Sandwich de Miga Negro', price: 120 },
     { type: 'bocadoSimple', name: 'Shot de Ensalada de Frutas', price: 150 },
     { type: 'bocadoSimple', name: 'Shot de Yogurt con Granola', price: 150 },
     { type: 'bocadoSimple', name: 'Pinchos de Frutas 🆕', price: 150 },
     { type: 'bocadoSimple', name: 'Fruta de Estación', price: 150 },
     { type: 'bocadoSimple', name: 'Barrita de Cereal', price: 150 },
+    { type: 'bocadoSimple', name: 'Roll de Jamón y Queso (Sin TACC) 🌾', price: 120 }, 
+
     
-    // ===== CATEGORÍA BOCADOS SALADOS SIMPLES (Usada en Combo 8) =====
+    // ===== CATEGORÍA BOCADOS SALADOS SIMPLES (Usada en Combo 3 y 8) =====
     { type: 'bocadoSaladoSimple', name: 'Medialuna con Jamón y Queso', price: 180 },
     { type: 'bocadoSaladoSimple', name: 'Chipacito de Queso', price: 180 },
     { type: 'bocadoSaladoSimple', name: 'Scon de Queso', price: 180 },
@@ -127,15 +122,11 @@ const menuItems = [
     { type: 'bocadoEspecialDulce', name: 'Fruta de Estación', price: 250 },
     { type: 'bocadoEspecialDulce', name: 'Barrita de Cereal', price: 250 },
 
-    // ===== CATEGORÍA BOCADOS ESPECIALES SALADOS (Usada en Combo 5, 7, 9) =====
+    // ===== CATEGORÍA BOCADOS ESPECIALES SALADOS (Usada en Combo 5, 9) =====
     { type: 'bocadoEspecialSalado', name: 'Mini Wrap de Jamón y Queso', price: 280 },
     { type: 'bocadoEspecialSalado', name: 'Mini Wrap de Pollo', price: 280 },
     { type: 'bocadoEspecialSalado', name: 'Mini Wrap de Carne', price: 280 },
     { type: 'bocadoEspecialSalado', name: 'Mini Wrap Vegetariano', price: 280 },
-    { type: 'bocadoEspecialSalado', name: 'Empanada de Carne', price: 300 },
-    { type: 'bocadoEspecialSalado', name: 'Empanada de Pollo', price: 300 },
-    { type: 'bocadoEspecialSalado', name: 'Empanada de Jamón y Queso', price: 300 },
-    { type: 'bocadoEspecialSalado', name: 'Empanada de Verdura', price: 300 },
     { type: 'bocadoEspecialSalado', name: 'Triángulos de Queso con Semillas de Sésamo 🆕', price: 300 },
     { type: 'bocadoEspecialSalado', name: 'Pizzeta Tomate y Mozzarella (Sin TACC) 🌾', price: 350 },
     { type: 'bocadoEspecialSalado', name: 'Medialuna de Jamón y Queso', price: 280 },
@@ -160,10 +151,20 @@ const menuItems = [
     { type: 'bocadoEspecialSalado', name: 'Pinchos de Tomate Cherry + Jamón + Queso + Aceituna 🆕', price: 280 },
     { type: 'bocadoEspecialSalado', name: 'Pinchos de Tomate Cherry + Mozzarella + Albahaca 🆕', price: 280 },
 
+    // ===== CATEGORÍA EMPANADAS (NUEVA, Usada en Combo 7) =====
+    { type: 'empanada', name: 'Empanada de Carne', price: 300 },
+    { type: 'empanada', name: 'Empanada de Pollo', price: 300 },
+    { type: 'empanada', name: 'Empanada de Jamón y Queso', price: 300 },
+    { type: 'empanada', name: 'Empanada de Verdura', price: 300 },
+
     // ===== CATEGORÍA SHOTS DULCES (Usada en Combo 9) =====
     { type: 'shotDulce', name: 'Shot Dulce - Lemon Pie 🆕', price: 180 },
     { type: 'shotDulce', name: 'Shot Dulce - Chocotorta 🆕', price: 180 },
     { type: 'shotDulce', name: 'Shot Dulce - Red Velvet 🆕', price: 180 },
+
+    // ===== AÑADIDO: CATEGORÍA BEBIDAS SIMPLES (Usada en Combo 8 y 9) =====
+    { type: 'bebidaSimple', name: 'Agua Mineral Grande 1.5lts', price: 0 },
+    { type: 'bebidaSimple', name: 'Gaseosa Grande', price: 0 },
 ];
 
 // Definición de paquetes base (Combos actualizados con precio POR PERSONA)
@@ -171,25 +172,23 @@ const packages = [
   { 
     id: 'C1', 
     name: '1. Coffee Break (Simple)', 
-    description: 'Bebida caliente + 1 bocado simple.', 
+    description: 'Infusiones, jugo y agua.', 
     basePrice: 2200, 
     attendeesBase: 1, 
-    bocadoSimpleCount: 1,
     hasNespressoOption: true,
   },
   { 
     id: 'C1N', 
     name: '1. Coffee Break (con NESPRESSO)', 
-    description: 'Nespresso + 1 bocado simple.', 
+    description: 'Nespresso, infusiones, jugo y agua.', 
     basePrice: 3400, 
     attendeesBase: 1, 
-    bocadoSimpleCount: 1,
     isNespresso: true,
   },
   { 
     id: 'C2', 
     name: '2. Coffee Break + 2 Facturas', 
-    description: 'Bebida caliente + 2 Facturas.', 
+    description: 'Infusiones, jugo y agua + 2 Facturas.', 
     basePrice: 3800, 
     attendeesBase: 1,
     bocadoFacturaCount: 2,
@@ -198,7 +197,7 @@ const packages = [
   { 
     id: 'C2N', 
     name: '2. Coffee Break + 2 Facturas (con NESPRESSO)', 
-    description: 'Nespresso + 2 Facturas.', 
+    description: 'Nespresso, infusiones, jugo y agua + 2 Facturas.', 
     basePrice: 5600, 
     attendeesBase: 1,
     bocadoFacturaCount: 2,
@@ -206,26 +205,26 @@ const packages = [
   },
   { 
     id: 'C3', 
-    name: '3. Coffee Break + 2 Bocados Simples', 
-    description: 'Bebida caliente + 2 bocados simples.', 
+    name: '3. Coffee Break + 2 Bocados Simples (Mixto)', 
+    description: 'Infusiones, jugo y agua + 2 bocados simples (Dulce y/o Salado).', 
     basePrice: 5200, 
     attendeesBase: 1,
-    bocadoSimpleCount: 2,
+    bocadoSimpleTotalCount: 2, 
     hasNespressoOption: true,
   },
   { 
     id: 'C3N', 
     name: '3. Coffee Break + 2 Bocados Simples (con NESPRESSO)', 
-    description: 'Nespresso + 2 bocados simples.', 
+    description: 'Nespresso, infusiones, jugo y agua + 2 bocados simples (Dulce y/o Salado).', 
     basePrice: 6550, 
     attendeesBase: 1,
-    bocadoSimpleCount: 2,
+    bocadoSimpleTotalCount: 2, 
     isNespresso: true,
   },
   { 
     id: 'C4', 
     name: '4. Coffee Break + 2 Bocados Especiales (Mixto)', 
-    description: 'Bebida caliente + 2 bocados especiales (Dulce y/o Salado).', 
+    description: 'Infusiones, jugo y agua + 2 bocados especiales (Dulce y/o Salado).', 
     basePrice: 5800, 
     attendeesBase: 1,
     bocadoEspecialTotalCount: 2,
@@ -234,7 +233,7 @@ const packages = [
   { 
     id: 'C4N', 
     name: '4. Coffee Break + 2 Bocados Especiales (con NESPRESSO)', 
-    description: 'Nespresso + 2 bocados especiales (Dulce y/o Salado).', 
+    description: 'Nespresso, infusiones, jugo y agua + 2 bocados especiales (Dulce y/o Salado).', 
     basePrice: 7550, 
     attendeesBase: 1,
     bocadoEspecialTotalCount: 2,
@@ -243,7 +242,7 @@ const packages = [
   { 
     id: 'C5', 
     name: '5. Coffee Break + 2 Bocados Salados Especiales', 
-    description: 'Bebida caliente + 2 bocados salados especiales.', 
+    description: 'Infusiones, jugo y agua + 2 bocados salados especiales.', 
     basePrice: 6600, 
     attendeesBase: 1,
     bocadoEspecialSaladoCount: 2,
@@ -252,7 +251,7 @@ const packages = [
   { 
     id: 'C5N', 
     name: '5. Coffee Break + 2 Bocados Salados Especiales (con NESPRESSO)', 
-    description: 'Nespresso + 2 bocados salados especiales.', 
+    description: 'Nespresso, infusiones, jugo y agua + 2 bocados salados especiales.', 
     basePrice: 8400, 
     attendeesBase: 1,
     bocadoEspecialSaladoCount: 2,
@@ -261,7 +260,7 @@ const packages = [
   { 
     id: 'C6N', 
     name: '6. Coffee Break (NESPRESSO) + 4 Bocados Especiales (Mixto)', 
-    description: 'Nespresso + 4 bocados especiales (Dulce y/o Salado).', 
+    description: 'Nespresso, infusiones, jugo y agua + 4 bocados especiales (Dulce y/o Salado).', 
     basePrice: 8400, 
     attendeesBase: 1,
     bocadoEspecialTotalCount: 4, 
@@ -270,42 +269,45 @@ const packages = [
   { 
     id: 'C7N', 
     name: '7. Coffee Break (NESPRESSO) + 2 Empanadas + 2 Bocados Simples', 
-    description: 'Nespresso + 2 bocados especiales salados + 2 bocados simples.', 
+    description: 'Nespresso, infusiones, jugo y agua + 2 empanadas + 2 bocados simples.', 
     basePrice: 9600, 
     attendeesBase: 1,
-    bocadoEspecialSaladoCount: 2,
+    empanadaCount: 2, 
     bocadoSimpleCount: 2,
     isNespresso: true,
   },
   { 
     id: 'C8S', 
     name: '8. BIENVENIDA SIMPLE', 
-    description: '3 bocados salados simples + 1 bocado dulce simple + agua mineral o gaseosa.', 
+    description: '3 bocados salados simples + 1 bocado dulce simple + 1 bebida (agua o gaseosa).', // CORREGIDO
     basePrice: 8750, 
     attendeesBase: 1,
     bocadoSaladoSimpleCount: 3,
     bocadoSimpleCount: 1,
+    bebidaSimpleCount: 1, // AÑADIDO
   },
   { 
     id: 'C9F', 
     name: '9. BIENVENIDA FULL', 
-    description: 'Coffee break + 5 bocados salados esp. + 2 bocados dulces esp. + 1 shot dulce + bebida.', 
+    description: 'Infusiones, jugo y agua + 5 bocados salados esp. + 2 bocados dulces esp. + 1 shot dulce + 1 bebida (agua o gaseosa).', // CORREGIDO
     basePrice: 18500, 
     attendeesBase: 1,
     bocadoEspecialSaladoCount: 5,
     bocadoEspecialDulceCount: 2,
     shotDulceCount: 1,
+    bebidaSimpleCount: 1, // AÑADIDO
     hasNespressoOption: true,
   },
   { 
     id: 'C9FN', 
     name: '9. BIENVENIDA FULL (con NESPRESSO)', 
-    description: 'Coffee break Nespresso + 5 bocados salados esp. + 2 bocados dulces esp. + 1 shot dulce + bebida.', 
+    description: 'Nespresso, infusiones, jugo y agua + 5 bocados salados esp. + 2 bocados dulces esp. + 1 shot dulce + 1 bebida (agua o gaseosa).', // CORREGIDO
     basePrice: 20600, 
     attendeesBase: 1,
     bocadoEspecialSaladoCount: 5,
     bocadoEspecialDulceCount: 2,
     shotDulceCount: 1,
+    bebidaSimpleCount: 1, // AÑADIDO
     isNespresso: true,
   },
 ];
@@ -370,7 +372,7 @@ const OrderList = ({ orders, userId }) => {
             </div>
             <p className="text-2xl font-extrabold text-green-600">{formatCurrency(order.totalPrice)}</p>
           </div>
-          <p className="text-sm text-gray-700">Para **{order.attendees}** asistentes.</p>
+          <p className="text-sm text-gray-700">Para <strong>{order.attendees}</strong> asistentes.</p>
           
           {order.selectedBocados && Object.keys(order.selectedBocados).length > 0 && (
             <div className="mt-2 border-t pt-2">
@@ -408,20 +410,45 @@ const OrderList = ({ orders, userId }) => {
 };
 
 // Componente para seleccionar bocados dentro de un combo
-const BocadoSelector = ({ title, itemTypes, maxTotalPerAttendee, formData, setFormData, attendees }) => {
+const BocadoSelector = ({ 
+    title, 
+    itemTypes, 
+    maxTotalPerAttendee, 
+    formData, 
+    setFormData, 
+    attendees,
+    otherItemTypes = [], 
+    sharedMaxTotalPerAttendee = 0 
+}) => {
+    
+    const maxToUse = sharedMaxTotalPerAttendee > 0 ? sharedMaxTotalPerAttendee : maxTotalPerAttendee;
+
     const availableItems = useMemo(() => {
         if (!itemTypes) return [];
         return menuItems.filter(item => itemTypes.includes(item.type));
     }, [itemTypes]);
+
+    const otherAvailableItems = useMemo(() => {
+        if (!otherItemTypes) return [];
+        return menuItems.filter(item => otherItemTypes.includes(item.type));
+    }, [otherItemTypes]);
     
     const currentTotalSelected = useMemo(() => {
-        return availableItems.reduce((sum, item) => sum + (formData.selectedBocados[item.name] || 0), 0);
-    }, [formData.selectedBocados, availableItems]);
+        const thisCategoryTotal = availableItems.reduce((sum, item) => sum + (formData.selectedBocados[item.name] || 0), 0);
+        
+        if (sharedMaxTotalPerAttendee > 0) {
+            const otherCategoryTotal = otherAvailableItems.reduce((sum, item) => sum + (formData.selectedBocados[item.name] || 0), 0);
+            return thisCategoryTotal + otherCategoryTotal;
+        }
+        
+        return thisCategoryTotal;
 
-    const totalMax = maxTotalPerAttendee * attendees;
+    }, [formData.selectedBocados, availableItems, otherAvailableItems, sharedMaxTotalPerAttendee]);
+
+    const totalMax = maxToUse * attendees;
     const remaining = totalMax - currentTotalSelected;
 
-    if (maxTotalPerAttendee <= 0) return null;
+    if (maxToUse <= 0) return null;
 
     const handleBocadoChange = (bocadoName, change) => {
         setFormData(prev => {
@@ -451,13 +478,19 @@ const BocadoSelector = ({ title, itemTypes, maxTotalPerAttendee, formData, setFo
     return (
         <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-inner">
             <h4 className="font-semibold text-gray-800 mb-2">
-                {title} <span className={`text-xs ${remaining === 0 ? 'text-red-500 font-bold' : 'text-indigo-600'}`}>
-                    ({currentTotalSelected} de {totalMax} unidades seleccionadas)
-                </span>
+                {title} 
+                {sharedMaxTotalPerAttendee === 0 && (
+                    <span className={`text-xs ${remaining === 0 ? 'text-red-500 font-bold' : 'text-indigo-600'}`}>
+                        ({currentTotalSelected} de {totalMax} unidades seleccionadas)
+                    </span>
+                )}
             </h4>
-            <p className="text-xs text-gray-500 mb-3">
-                Máximo de unidades **TOTALES** a elegir: **{totalMax}** (Base por asistente: {maxTotalPerAttendee} unidad/es)
-            </p>
+            
+            {sharedMaxTotalPerAttendee === 0 && (
+                <p className="text-xs text-gray-500 mb-3">
+                    Máximo de unidades <strong>TOTALES</strong> a elegir: <strong>{totalMax}</strong> (Base por asistente: {maxToUse} unidad/es)
+                </p>
+            )}
             
             {availableItems.map((item) => (
                 <div key={item.name} className="flex justify-between items-center py-1.5 border-b border-gray-100 last:border-b-0">
@@ -489,6 +522,16 @@ const BocadoSelector = ({ title, itemTypes, maxTotalPerAttendee, formData, setFo
     );
 };
 
+
+const getMinDate = () => {
+  const today = new Date();
+  const minDate = new Date(today.getTime() + 48 * 60 * 60 * 1000);
+  return minDate.toISOString().split('T')[0];
+};
+
+const minDateString = getMinDate();
+
+
 const App = () => {
   const [db, setDb] = useState(null);
   const [auth, setAuth] = useState(null);
@@ -506,7 +549,7 @@ const App = () => {
     return {
         name: '',
         email: '',
-        eventDate: new Date().toISOString().split('T')[0],
+        eventDate: minDateString, 
         eventTime: '10:00',
         attendees: 20,
         selectedPackageId: packages[0].id,
@@ -535,7 +578,12 @@ const App = () => {
 
       const unsubscribe = onAuthStateChanged(authInstance, async (user) => {
         if (!user) {
-          await signInAnonymously(authInstance);
+          try {
+            await signInAnonymously(authInstance);
+          } catch (authError) {
+             console.error("Error signing in anonymously:", authError);
+             setMessage(`❌ Error de autenticación: ${authError.message}`);
+          }
         }
         setUserId(authInstance.currentUser?.uid || null);
         setIsAuthReady(true);
@@ -655,6 +703,12 @@ const App = () => {
     });
   };
 
+  const getTotalSelectedForMixto = (itemTypes) => {
+      const items = menuItems.filter(item => itemTypes.includes(item.type));
+      return items.reduce((sum, item) => sum + (formData.selectedBocados[item.name] || 0), 0);
+  };
+
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!db || !userId || isSubmitting) return;
@@ -676,19 +730,41 @@ const App = () => {
           quantity: formData.addonQuantities[addon.name]
         }));
       
-      const requiredBocadosPerAttendee = Object.keys(selectedPackage)
-          .filter(key => key.includes('Count'))
+      let totalBocadosRequired = 0;
+      let totalBocadosSelected = 0;
+
+      if (selectedPackage.bocadoSimpleTotalCount > 0) {
+          totalBocadosRequired += selectedPackage.bocadoSimpleTotalCount * formData.attendees;
+          totalBocadosSelected += getTotalSelectedForMixto(['bocadoSimple', 'bocadoSaladoSimple']);
+      }
+      if (selectedPackage.bocadoEspecialTotalCount > 0) {
+          totalBocadosRequired += selectedPackage.bocadoEspecialTotalCount * formData.attendees;
+          totalBocadosSelected += getTotalSelectedForMixto(['bocadoEspecialDulce', 'bocadoEspecialSalado']);
+      }
+
+      const nonMixtoCounts = Object.keys(selectedPackage)
+          .filter(key => key.includes('Count') && !key.includes('TotalCount'))
           .reduce((sum, key) => sum + (selectedPackage[key] || 0), 0);
-        
-      const totalBocadosRequired = requiredBocadosPerAttendee * formData.attendees;
-      const totalBocadosSelected = Object.values(formData.selectedBocados).reduce((a, b) => a + b, 0);
+
+      totalBocadosRequired += nonMixtoCounts * formData.attendees;
+      
+      // AÑADIDO: 'bebidaSimple' a la validación
+      const nonMixtoTypes = ['bocadoFactura', 'empanada', 'shotDulce', 'bebidaSimple']; 
+      
+      if (selectedPackage.bocadoSimpleCount > 0) nonMixtoTypes.push('bocadoSimple'); 
+      if (selectedPackage.bocadoSaladoSimpleCount > 0) nonMixtoTypes.push('bocadoSaladoSimple');
+      if (selectedPackage.bocadoEspecialSaladoCount > 0) nonMixtoTypes.push('bocadoEspecialSalado');
+      if (selectedPackage.bocadoEspecialDulceCount > 0) nonMixtoTypes.push('bocadoEspecialDulce');
+      
+      totalBocadosSelected += getTotalSelectedForMixto(nonMixtoTypes);
+
 
       if (totalBocadosRequired > 0 && totalBocadosSelected === 0) {
         throw new Error("Por favor, selecciona la variedad de bocados para tu combo.");
       }
       
       if (totalBocadosRequired > 0 && totalBocadosSelected < totalBocadosRequired) {
-          throw new Error(`Debes seleccionar un total de ${totalBocadosRequired} unidades de bocados (Seleccionaste ${totalBocadosSelected}).`);
+          throw new Error(`Debes seleccionar un total de ${totalBocadosRequired} unidades de bocados/bebidas (Seleccionaste ${totalBocadosSelected}).`);
       }
       
       const orderData = {
@@ -705,16 +781,15 @@ const App = () => {
         observations: formData.observations,
         status: 'Pendiente',
         userId: userId,
+        appId: appId,
         timestamp: new Date().toISOString(), 
       };
 
-      // 1. Guardar en Firebase Firestore
       const ordersRef = collection(db, `artifacts/${appId}/users/${userId}/orders`);
       const docRef = await addDoc(ordersRef, { ...orderData, createdAt: serverTimestamp() });
       
       orderData.orderId = docRef.id;
 
-      // 2. Enviar a Webhook de n8n/Make si está configurado
       if (N8N_WEBHOOK_URL) {
           try {
               const webhookResponse = await fetch(N8N_WEBHOOK_URL, {
@@ -733,9 +808,10 @@ const App = () => {
           }
       }
 
-      // Resetear el formulario
       setFormData(prev => ({
         ...prev,
+        eventDate: minDateString, 
+        attendees: 20,
         selectedPackageId: packages[0].id,
         addonQuantities: addons.reduce((acc, addon) => ({ ...acc, [addon.name]: 0 }), {}),
         selectedBocados: menuItems.reduce((acc, item) => ({ ...acc, [item.name]: 0 }), {}),
@@ -766,9 +842,23 @@ const App = () => {
 
   const selectedPackage = packages.find(p => p.id === formData.selectedPackageId);
   const needsBocadoSelection = Object.keys(selectedPackage || {}).some(key => key.includes('Count') && selectedPackage[key] > 0);
+  
   const isMixtoEspecial = selectedPackage?.bocadoEspecialTotalCount > 0 && 
                          !(selectedPackage?.bocadoEspecialDulceCount > 0) &&
                          !(selectedPackage?.bocadoEspecialSaladoCount > 0);
+
+  const isMixtoSimple = selectedPackage?.bocadoSimpleTotalCount > 0 && 
+                       !(selectedPackage?.bocadoSimpleCount > 0) &&
+                       !(selectedPackage?.bocadoSaladoSimpleCount > 0);
+
+  const totalSelectedMixtoSimple = isMixtoSimple ? getTotalSelectedForMixto(['bocadoSimple', 'bocadoSaladoSimple']) : 0;
+  const totalMaxMixtoSimple = (selectedPackage?.bocadoSimpleTotalCount || 0) * formData.attendees;
+  const remainingMixtoSimple = totalMaxMixtoSimple - totalSelectedMixtoSimple;
+
+  const totalSelectedMixtoEspecial = isMixtoEspecial ? getTotalSelectedForMixto(['bocadoEspecialDulce', 'bocadoEspecialSalado']) : 0;
+  const totalMaxMixtoEspecial = (selectedPackage?.bocadoEspecialTotalCount || 0) * formData.attendees;
+  const remainingMixtoEspecial = totalMaxMixtoEspecial - totalSelectedMixtoEspecial;
+
 
   return (
     <div className="min-h-screen bg-gray-100 p-4 sm:p-10 font-sans">
@@ -779,7 +869,7 @@ const App = () => {
              Sistema de Pedidos Coffee Break UDESA
           </h1>
           <p className="text-gray-500 mt-2 text-sm">Organiza tu evento de manera rápida y sencilla.</p>
-          <p className="text-xs text-gray-400 mt-2">Tu ID de Sesión: <span className="font-mono select-all">{userId}</span></p>
+          <p className="text-xs text-gray-400 mt-2">Tu ID de Sesión: <span className="font-mono select-all">{userId || 'Autenticando...'}</span></p>
         </header>
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -800,7 +890,7 @@ const App = () => {
                       value={formData.eventDate}
                       onChange={handleInputChange}
                       required
-                      min={new Date().toISOString().split('T')[0]}
+                      min={minDateString} 
                       className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm p-3 border focus:ring-indigo-500 focus:border-indigo-500"
                     />
                   </label>
@@ -886,7 +976,7 @@ const App = () => {
               {needsBocadoSelection && (
                 <div className="space-y-4 pt-4 border-t p-6 bg-blue-50 rounded-xl border border-blue-200">
                     <h3 className="text-lg font-bold text-blue-800">2b. Selección de Bocados ({formData.attendees} asistentes)</h3>
-                    <p className="text-sm text-blue-700 italic">Elige la variedad de bocados **totales** que incluye tu paquete. El límite se basa en **unidades por asistente**.</p>
+                    <p className="text-sm text-blue-700 italic">Elige la variedad de bocados <strong>totales</strong> que incluye tu paquete. El límite se basa en <strong>unidades por asistente</strong>.</p>
 
                     <div className="space-y-4">
                         
@@ -894,15 +984,6 @@ const App = () => {
                             title="Facturas (Medialunas, Libritos, etc.)"
                             itemTypes={['bocadoFactura']}
                             maxTotalPerAttendee={selectedPackage.bocadoFacturaCount || 0}
-                            formData={formData}
-                            setFormData={setFormData}
-                            attendees={formData.attendees}
-                        />
-                        
-                        <BocadoSelector
-                            title="Bocados Simples (Budines, Cuadraditos, Sándwiches, Frutas, etc.)"
-                            itemTypes={['bocadoSimple']}
-                            maxTotalPerAttendee={selectedPackage.bocadoSimpleCount || 0}
                             formData={formData}
                             setFormData={setFormData}
                             attendees={formData.attendees}
@@ -918,14 +999,32 @@ const App = () => {
                         />
 
                         <BocadoSelector
-                            title="Shots Dulces (Lemon Pie, Chocotorta, Red Velvet)"
-                            itemTypes={['shotDulce']}
-                            maxTotalPerAttendee={selectedPackage.shotDulceCount || 0}
+                            title="Bocados Especiales Salados (Wraps, Pizzetas, etc.)"
+                            itemTypes={['bocadoEspecialSalado']}
+                            maxTotalPerAttendee={selectedPackage.bocadoEspecialSaladoCount || 0}
                             formData={formData}
                             setFormData={setFormData}
                             attendees={formData.attendees}
                         />
 
+                        <BocadoSelector
+                            title="Empanadas"
+                            itemTypes={['empanada']}
+                            maxTotalPerAttendee={selectedPackage.empanadaCount || 0}
+                            formData={formData}
+                            setFormData={setFormData}
+                            attendees={formData.attendees}
+                        />
+
+                        <BocadoSelector
+                            title="Bocados Simples (Budines, Cuadraditos, Frutas, etc.)"
+                            itemTypes={['bocadoSimple']}
+                            maxTotalPerAttendee={selectedPackage.bocadoSimpleCount || 0}
+                            formData={formData}
+                            setFormData={setFormData}
+                            attendees={formData.attendees}
+                        />
+                        
                         <BocadoSelector
                             title="Bocados Especiales Dulces (Cookies, Alfajores, Shot Yogurt)"
                             itemTypes={['bocadoEspecialDulce']}
@@ -934,36 +1033,85 @@ const App = () => {
                             setFormData={setFormData}
                             attendees={formData.attendees}
                         />
-                        
+
                         <BocadoSelector
-                            title="Bocados Especiales Salados (Wraps, Empanadas, Pizzetas)"
-                            itemTypes={['bocadoEspecialSalado']}
-                            maxTotalPerAttendee={selectedPackage.bocadoEspecialSaladoCount || 0}
+                            title="Shots Dulces (Lemon Pie, Chocotorta, Red Velvet)"
+                            itemTypes={['shotDulce']}
+                            maxTotalPerAttendee={selectedPackage.shotDulceCount || 0}
+                            formData={formData}
+                            setFormData={setFormData}
+                            attendees={formData.attendees}
+                        />
+
+                        {/* AÑADIDO: Selector para Bebidas Simples (Combo 8 y 9) */}
+                        <BocadoSelector
+                            title="Bebida (Agua o Gaseosa)"
+                            itemTypes={['bebidaSimple']}
+                            maxTotalPerAttendee={selectedPackage.bebidaSimpleCount || 0}
                             formData={formData}
                             setFormData={setFormData}
                             attendees={formData.attendees}
                         />
                          
-                         {isMixtoEspecial && (
-                            <div className='bg-yellow-50 p-3 rounded-xl border border-yellow-300'>
-                                <p className='text-sm font-semibold text-yellow-800 mb-2'>
-                                    Selección Mixta (Especiales Dulces y Salados)
+                        {isMixtoSimple && (
+                            <div className='bg-teal-50 p-3 rounded-xl border border-teal-300'>
+                                <p className='text-sm font-semibold text-teal-800 mb-2'>
+                                    Selección Mixta (Simples Dulces y Salados)
+                                    <span className={`text-xs ml-2 ${remainingMixtoSimple === 0 ? 'text-red-500 font-bold' : 'text-teal-600'}`}>
+                                        ({totalSelectedMixtoSimple} de {totalMaxMixtoSimple} unidades seleccionadas)
+                                    </span>
                                 </p>
-                                <p className='text-xs text-yellow-700 mb-3'>
-                                    Tienes un total de **{selectedPackage.bocadoEspecialTotalCount}** unidades por asistente para dividir libremente entre las opciones Dulces y Saladas Especiales.
+                                <p className='text-xs text-teal-700 mb-3'>
+                                    Tienes un total de <strong>{selectedPackage.bocadoSimpleTotalCount}</strong> unidades por asistente para dividir libremente entre las opciones Dulces y Saladas Simples.
                                 </p>
                                 <BocadoSelector
-                                    title="Especiales Dulces (Mixto)"
-                                    itemTypes={['bocadoEspecialDulce']}
-                                    maxTotalPerAttendee={selectedPackage.bocadoEspecialTotalCount || 0}
+                                    title="Simples (Dulces)"
+                                    itemTypes={['bocadoSimple']}
+                                    otherItemTypes={['bocadoSaladoSimple']}
+                                    sharedMaxTotalPerAttendee={selectedPackage.bocadoSimpleTotalCount || 0}
                                     formData={formData}
                                     setFormData={setFormData}
                                     attendees={formData.attendees}
                                 />
+                                <div className="mt-2"></div>
                                 <BocadoSelector
-                                    title="Especiales Salados (Mixto)"
+                                    title="Simples (Salados)"
+                                    itemTypes={['bocadoSaladoSimple']}
+                                    otherItemTypes={['bocadoSimple']}
+                                    sharedMaxTotalPerAttendee={selectedPackage.bocadoSimpleTotalCount || 0}
+                                    formData={formData}
+                                    setFormData={setFormData}
+                                    attendees={formData.attendees}
+                                />
+                            </div>
+                        )}
+
+                         {isMixtoEspecial && (
+                            <div className='bg-yellow-50 p-3 rounded-xl border border-yellow-300'>
+                                <p className='text-sm font-semibold text-yellow-800 mb-2'>
+                                    Selección Mixta (Especiales Dulces y Salados)
+                                    <span className={`text-xs ml-2 ${remainingMixtoEspecial === 0 ? 'text-red-500 font-bold' : 'text-yellow-700'}`}>
+                                        ({totalSelectedMixtoEspecial} de {totalMaxMixtoEspecial} unidades seleccionadas)
+                                    </span>
+                                </p>
+                                <p className='text-xs text-yellow-700 mb-3'>
+                                    Tienes un total de <strong>{selectedPackage.bocadoEspecialTotalCount}</strong> unidades por asistente para dividir libremente entre las opciones Dulces y Saladas Especiales.
+                                </p>
+                                <BocadoSelector
+                                    title="Especiales (Dulces)"
+                                    itemTypes={['bocadoEspecialDulce']}
+                                    otherItemTypes={['bocadoEspecialSalado']}
+                                    sharedMaxTotalPerAttendee={selectedPackage.bocadoEspecialTotalCount || 0}
+                                    formData={formData}
+                                    setFormData={setFormData}
+                                    attendees={formData.attendees}
+                                />
+                                <div className="mt-2"></div>
+                                <BocadoSelector
+                                    title="Especiales (Salados)"
                                     itemTypes={['bocadoEspecialSalado']}
-                                    maxTotalPerAttendee={selectedPackage.bocadoEspecialTotalCount || 0}
+                                    otherItemTypes={['bocadoEspecialDulce']}
+                                    sharedMaxTotalPerAttendee={selectedPackage.bocadoEspecialTotalCount || 0}
                                     formData={formData}
                                     setFormData={setFormData}
                                     attendees={formData.attendees}
@@ -977,7 +1125,7 @@ const App = () => {
 
               <div className="space-y-4 pt-4 border-t">
                 <h3 className="text-lg font-bold text-indigo-700">3. Extras Adicionales (Con Costo Extra)</h3>
-                <p className='text-sm text-gray-600'>Nota: El **Personal de Apoyo** solo permite seleccionar **una** opción.</p>
+                <p className='text-sm text-gray-600'>Nota: El <strong>Personal de Apoyo</strong> solo permite seleccionar <strong>una</strong> opción.</p>
                 <div className="space-y-3">
                   {addons.map((addon) => {
                     const isSupportStaff = addon.name.startsWith('Personal de Apoyo');
@@ -991,13 +1139,13 @@ const App = () => {
                             <button
                             type="button"
                             onClick={() => handleAddonChange(addon.name, -1)}
-                            disabled={formData.addonQuantities[addon.name] === 0}
+                            disabled={!formData.addonQuantities[addon.name] || formData.addonQuantities[addon.name] === 0}
                             className="p-1 bg-red-50 text-red-600 rounded-full w-8 h-8 flex items-center justify-center disabled:opacity-50 transition hover:bg-red-100"
                             >
                             -
                             </button>
                             <span className="w-8 text-center font-bold text-gray-800">
-                            {formData.addonQuantities[addon.name]}
+                            {formData.addonQuantities[addon.name] || 0}
                             </span>
                             <button
                             type="button"
@@ -1034,7 +1182,7 @@ const App = () => {
                 )}
                 <button
                   type="submit"
-                  disabled={isSubmitting || formData.attendees <= 0}
+                  disabled={isSubmitting || formData.attendees <= 0 || !userId}
                   className="w-full py-4 px-4 border border-transparent rounded-xl shadow-lg text-lg font-bold text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 disabled:bg-indigo-300"
                 >
                   {isSubmitting ? 'Enviando Pedido...' : `Enviar Pedido por ${formatCurrency(totalPrice)}`}
@@ -1051,14 +1199,14 @@ const App = () => {
                 <p className="text-gray-500 text-sm">Paquete Seleccionado:</p>
                 <p className="text-lg font-semibold text-indigo-600">{selectedPackage?.name}</p>
                 <p className="text-xs text-gray-500 italic mt-1">
-                    Precio por persona: **{formatCurrency(selectedPackage?.basePrice)}**
+                    Precio por persona: <strong>{formatCurrency(selectedPackage?.basePrice)}</strong>
                 </p>
               </div>
               
               <div className="space-y-2 border-t pt-4">
                 <div className="flex justify-between">
                   <p className="text-sm font-medium text-gray-600">Costo Base ({formData.attendees} pers.):</p>
-                  <p className="text-sm font-medium text-gray-600">{formatCurrency(selectedPackage?.basePrice * formData.attendees)}</p>
+                  <p className="text-sm font-medium text-gray-600">{formatCurrency((selectedPackage?.basePrice || 0) * formData.attendees)}</p>
                 </div>
                 
                 {addons.filter(a => formData.addonQuantities[a.name] > 0).map(addon => (
