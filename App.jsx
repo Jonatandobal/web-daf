@@ -30,6 +30,7 @@ const menuItems = [
     { type: 'bocadoFactura', name: 'Sacramento 🆕', price: 100 },
 
     // ===== CATEGORÍA BOCADOS SIMPLES (Usada en Combo 3, 7, 8) =====
+    // Estos son los "Simples DULCES" para el Combo 8
     { type: 'bocadoSimple', name: 'Medialuna de Manteca', price: 120 },
     { type: 'bocadoSimple', name: 'Medialuna de Grasa', price: 120 },
     { type: 'bocadoSimple', name: 'Librito', price: 120 },
@@ -65,7 +66,7 @@ const menuItems = [
     { type: 'bocadoSimple', name: 'Pinchos de Frutas 🆕', price: 150 },
     { type: 'bocadoSimple', name: 'Fruta de Estación', price: 150 },
     { type: 'bocadoSimple', name: 'Barrita de Cereal', price: 150 },
-    { type: 'bocadoSimple', name: 'Roll de Jamón y Queso (Sin TACC) 🌾', price: 120 }, 
+    // ** MOVIDO a bocadoSaladoSimple ** { type: 'bocadoSimple', name: 'Roll de Jamón y Queso (Sin TACC) 🌾', price: 120 }, 
 
     
     // ===== CATEGORÍA BOCADOS SALADOS SIMPLES (Usada en Combo 3 y 8) =====
@@ -83,6 +84,7 @@ const menuItems = [
     { type: 'bocadoSaladoSimple', name: 'Petit Pain Tomate Cherry, Mozzarella y Albahaca 🆕', price: 180 },
     { type: 'bocadoSaladoSimple', name: 'Pinchos de Tomate Cherry + Jamón + Queso + Aceituna 🆕', price: 180 },
     { type: 'bocadoSaladoSimple', name: 'Pinchos de Tomate Cherry + Mozzarella + Albahaca 🆕', price: 180 },
+    { type: 'bocadoSaladoSimple', name: 'Roll de Jamón y Queso (Sin TACC) 🌾', price: 180 }, // ** MOVIDO AQUÍ y precio ajustado **
 
     // ===== CATEGORÍA BOCADOS ESPECIALES DULCES (Usada en Combo 4, 6, 9) =====
     { type: 'bocadoEspecialDulce', name: 'Medialuna de Manteca', price: 200 },
@@ -162,9 +164,9 @@ const menuItems = [
     { type: 'shotDulce', name: 'Shot Dulce - Chocotorta 🆕', price: 180 },
     { type: 'shotDulce', name: 'Shot Dulce - Red Velvet 🆕', price: 180 },
 
-    // ===== AÑADIDO: CATEGORÍA BEBIDAS SIMPLES (Usada en Combo 8 y 9) =====
-    { type: 'bebidaSimple', name: 'Agua Mineral Grande 1.5lts', price: 0 },
-    { type: 'bebidaSimple', name: 'Gaseosa Grande', price: 0 },
+    // ===== CATEGORÍA BEBIDAS SIMPLES (Usada en Combo 8 y 9) =====
+    { type: 'bebidaSimple', name: 'Agua Mineral', price: 0 }, // ** NOMBRE CORREGIDO **
+    { type: 'bebidaSimple', name: 'Gaseosa', price: 0 },      // ** NOMBRE CORREGIDO **
 ];
 
 // Definición de paquetes base (Combos actualizados con precio POR PERSONA)
@@ -279,35 +281,35 @@ const packages = [
   { 
     id: 'C8S', 
     name: '8. BIENVENIDA SIMPLE', 
-    description: '3 bocados salados simples + 1 bocado dulce simple + 1 bebida (agua o gaseosa).', // CORREGIDO
+    description: '3 bocados salados simples + 1 bocado dulce simple + 1 bebida (agua o gaseosa).', 
     basePrice: 8750, 
     attendeesBase: 1,
     bocadoSaladoSimpleCount: 3,
     bocadoSimpleCount: 1,
-    bebidaSimpleCount: 1, // AÑADIDO
+    bebidaSimpleCount: 1, 
   },
   { 
     id: 'C9F', 
     name: '9. BIENVENIDA FULL', 
-    description: 'Infusiones, jugo y agua + 5 bocados salados esp. + 2 bocados dulces esp. + 1 shot dulce + 1 bebida (agua o gaseosa).', // CORREGIDO
+    description: 'Infusiones, jugo y agua + 5 bocados salados esp. + 2 bocados dulces esp. + 1 shot dulce + 1 bebida (agua o gaseosa).', 
     basePrice: 18500, 
     attendeesBase: 1,
     bocadoEspecialSaladoCount: 5,
     bocadoEspecialDulceCount: 2,
     shotDulceCount: 1,
-    bebidaSimpleCount: 1, // AÑADIDO
+    bebidaSimpleCount: 1, 
     hasNespressoOption: true,
   },
   { 
     id: 'C9FN', 
     name: '9. BIENVENIDA FULL (con NESPRESSO)', 
-    description: 'Nespresso, infusiones, jugo y agua + 5 bocados salados esp. + 2 bocados dulces esp. + 1 shot dulce + 1 bebida (agua o gaseosa).', // CORREGIDO
+    description: 'Nespresso, infusiones, jugo y agua + 5 bocados salados esp. + 2 bocados dulces esp. + 1 shot dulce + 1 bebida (agua o gaseosa).', 
     basePrice: 20600, 
     attendeesBase: 1,
     bocadoEspecialSaladoCount: 5,
     bocadoEspecialDulceCount: 2,
     shotDulceCount: 1,
-    bebidaSimpleCount: 1, // AÑADIDO
+    bebidaSimpleCount: 1, 
     isNespresso: true,
   },
 ];
@@ -748,7 +750,6 @@ const App = () => {
 
       totalBocadosRequired += nonMixtoCounts * formData.attendees;
       
-      // AÑADIDO: 'bebidaSimple' a la validación
       const nonMixtoTypes = ['bocadoFactura', 'empanada', 'shotDulce', 'bebidaSimple']; 
       
       if (selectedPackage.bocadoSimpleCount > 0) nonMixtoTypes.push('bocadoSimple'); 
@@ -760,11 +761,11 @@ const App = () => {
 
 
       if (totalBocadosRequired > 0 && totalBocadosSelected === 0) {
-        throw new Error("Por favor, selecciona la variedad de bocados para tu combo.");
+        throw new Error("Por favor, selecciona la variedad de bocados/bebidas para tu combo."); // CORREGIDO mensaje
       }
       
       if (totalBocadosRequired > 0 && totalBocadosSelected < totalBocadosRequired) {
-          throw new Error(`Debes seleccionar un total de ${totalBocadosRequired} unidades de bocados/bebidas (Seleccionaste ${totalBocadosSelected}).`);
+          throw new Error(`Debes seleccionar un total de ${totalBocadosRequired} unidades de bocados/bebidas (Seleccionaste ${totalBocadosSelected}).`); // CORREGIDO mensaje
       }
       
       const orderData = {
@@ -1043,7 +1044,6 @@ const App = () => {
                             attendees={formData.attendees}
                         />
 
-                        {/* AÑADIDO: Selector para Bebidas Simples (Combo 8 y 9) */}
                         <BocadoSelector
                             title="Bebida (Agua o Gaseosa)"
                             itemTypes={['bebidaSimple']}
