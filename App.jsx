@@ -1,22 +1,20 @@
-import { initializeApp } from 'firebase/app';
-import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
-import { getFirestore, collection, query, addDoc, onSnapshot, orderBy, serverTimestamp } from 'firebase/firestore';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { collection, query, addDoc, onSnapshot, orderBy, serverTimestamp } from 'firebase/firestore';
 import React, { useState, useEffect, useMemo } from 'react';
+import { auth, db as firestore, appId } from './firebase.js';
+import LoginPage from './LoginPage.jsx';
+import RegisterPage from './RegisterPage.jsx';
 
-// --- CONFIGURACIÓN DE FIREBASE Y DATA ---
-
-const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
-};
+// --- CONFIGURACIÓN DE DATA ---
 
 const N8N_WEBHOOK_URL = import.meta.env.VITE_N8N_WEBHOOK_URL || '';
-const appId = import.meta.env.VITE_APP_ID || 'coffee-break-udesa';
+
+// Función para obtener la fecha mínima (48 horas desde hoy)
+const getMinDate = () => {
+  const today = new Date();
+  const minDate = new Date(today.getTime() + 48 * 60 * 60 * 1000);
+  return minDate.toISOString().split('T')[0];
+};
 
 // ========== MENÚ DE BOCADOS ACTUALIZADO - OCTUBRE 2025 ==========
 const menuItems = [
@@ -66,8 +64,6 @@ const menuItems = [
     { type: 'bocadoSimple', name: 'Pinchos de Frutas 🆕', price: 150 },
     { type: 'bocadoSimple', name: 'Fruta de Estación', price: 150 },
     { type: 'bocadoSimple', name: 'Barrita de Cereal', price: 150 },
-    // ** MOVIDO a bocadoSaladoSimple ** { type: 'bocadoSimple', name: 'Roll de Jamón y Queso (Sin TACC) 🌾', price: 120 }, 
-
     
     // ===== CATEGORÍA BOCADOS SALADOS SIMPLES (Usada en Combo 3 y 8) =====
     { type: 'bocadoSaladoSimple', name: 'Medialuna con Jamón y Queso', price: 180 },
@@ -84,7 +80,8 @@ const menuItems = [
     { type: 'bocadoSaladoSimple', name: 'Petit Pain Tomate Cherry, Mozzarella y Albahaca 🆕', price: 180 },
     { type: 'bocadoSaladoSimple', name: 'Pinchos de Tomate Cherry + Jamón + Queso + Aceituna 🆕', price: 180 },
     { type: 'bocadoSaladoSimple', name: 'Pinchos de Tomate Cherry + Mozzarella + Albahaca 🆕', price: 180 },
-    { type: 'bocadoSaladoSimple', name: 'Roll de Jamón y Queso (Sin TACC) 🌾', price: 180 }, // ** MOVIDO AQUÍ y precio ajustado **
+    { type: 'bocadoSaladoSimple', name: 'Roll de Jamón y Queso (Sin TACC) 🌾', price: 180 },
+    { type: 'bocadoSaladoSimple', name: 'Roll de Jamón y Queso 🆕', price: 180 },
 
     // ===== CATEGORÍA BOCADOS ESPECIALES DULCES (Usada en Combo 4, 6, 9) =====
     { type: 'bocadoEspecialDulce', name: 'Medialuna de Manteca', price: 200 },
@@ -165,8 +162,8 @@ const menuItems = [
     { type: 'shotDulce', name: 'Shot Dulce - Red Velvet 🆕', price: 180 },
 
     // ===== CATEGORÍA BEBIDAS SIMPLES (Usada en Combo 8 y 9) =====
-    { type: 'bebidaSimple', name: 'Agua Mineral', price: 0 }, // ** NOMBRE CORREGIDO **
-    { type: 'bebidaSimple', name: 'Gaseosa', price: 0 },      // ** NOMBRE CORREGIDO **
+    { type: 'bebidaSimple', name: 'Agua Mineral', price: 0 },
+    { type: 'bebidaSimple', name: 'Gaseosa', price: 0 },
 ];
 
 // Definición de paquetes base (Combos actualizados con precio POR PERSONA)
@@ -317,9 +314,8 @@ const packages = [
 // Definición de add-ons/extras actualizados
 const addons = [
   { name: 'Yogurt Bebible Frutilla/Vainilla (Jarra x Litro)', price: 5500 },
-  { name: 'Agua Mineral Grande 1.5lts', price: 2100 },
-  { name: 'Agua Mineral Chica', price: 1500 },
-  { name: 'Gaseosa Grande', price: 4500 },
+  { name: 'Agua Mineral', price: 2100 },
+  { name: 'Gaseosa', price: 4500 },
   { name: 'Jugo Cepita x Litro', price: 2500 },
   { name: 'Bocaditos Salados', price: 2200 },
   { name: 'Bocaditos Dulces', price: 650 },
@@ -352,7 +348,7 @@ const LoadingSpinner = () => (
   </div>
 );
 
-const OrderList = ({ orders, userId }) => {
+const OrderList = ({ orders, userEmail }) => {
   if (!orders.length) {
     return <p className="text-center text-gray-500 italic p-6">Aún no has realizado pedidos.</p>;
   }
@@ -369,7 +365,7 @@ const OrderList = ({ orders, userId }) => {
                 <span className="font-medium">Fecha:</span> {order.eventDate} a las {order.eventTime}
               </p>
               <p className="text-xs text-gray-500">
-                <span className="font-medium">ID de Usuario:</span> <span className="text-indigo-400 text-[10px] select-all">{userId}</span>
+                <span className="font-medium">Usuario:</span> <span className="text-indigo-400 text-[10px]">{userEmail}</span>
               </p>
             </div>
             <p className="text-2xl font-extrabold text-green-600">{formatCurrency(order.totalPrice)}</p>
@@ -524,27 +520,19 @@ const BocadoSelector = ({
     );
 };
 
-
-const getMinDate = () => {
-  const today = new Date();
-  const minDate = new Date(today.getTime() + 48 * 60 * 60 * 1000);
-  return minDate.toISOString().split('T')[0];
-};
-
-const minDateString = getMinDate();
-
-
 const App = () => {
-  const [db, setDb] = useState(null);
-  const [auth, setAuth] = useState(null);
-  const [userId, setUserId] = useState(null);
+  const [user, setUser] = useState(null);
   const [isAuthReady, setIsAuthReady] = useState(false);
   const [loading, setLoading] = useState(true);
   const [orders, setOrders] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState('');
+  const [showRegister, setShowRegister] = useState(false);
 
-  // Form State
+  // SOLUCION: Calcular minDateString ANTES de usarlo en el estado inicial
+  const minDateString = useMemo(() => getMinDate(), []);
+
+  // Form State - Inicialización correcta
   const [formData, setFormData] = useState(() => {
     const initialBocados = menuItems.reduce((acc, item) => ({ ...acc, [item.name]: 0 }), {});
 
@@ -554,7 +542,7 @@ const App = () => {
         eventDate: minDateString, 
         eventTime: '10:00',
         attendees: 20,
-        selectedPackageId: packages[0].id,
+        selectedPackageId: packages[0]?.id || 'C1',
         addonQuantities: addons.reduce((acc, addon) => ({ ...acc, [addon.name]: 0 }), {}),
         selectedBocados: initialBocados,
         observations: '',
@@ -564,45 +552,19 @@ const App = () => {
   // --- HOOKS DE FIREBASE ---
 
   useEffect(() => {
-    try {
-      if (!firebaseConfig.apiKey) {
-        console.error("Firebase config is missing. Cannot initialize app.");
-        setLoading(false);
-        return;
-      }
-      
-      const app = initializeApp(firebaseConfig);
-      const firestore = getFirestore(app);
-      const authInstance = getAuth(app);
-      
-      setDb(firestore);
-      setAuth(authInstance);
-
-      const unsubscribe = onAuthStateChanged(authInstance, async (user) => {
-        if (!user) {
-          try {
-            await signInAnonymously(authInstance);
-          } catch (authError) {
-             console.error("Error signing in anonymously:", authError);
-             setMessage(`❌ Error de autenticación: ${authError.message}`);
-          }
-        }
-        setUserId(authInstance.currentUser?.uid || null);
-        setIsAuthReady(true);
-        setLoading(false);
-      });
-
-      return () => unsubscribe();
-    } catch (error) {
-      console.error("Error initializing Firebase:", error);
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setIsAuthReady(true);
       setLoading(false);
-    }
+    });
+
+    return () => unsubscribe();
   }, []);
 
   // Carga de datos (Pedidos del usuario actual)
   useEffect(() => {
-    if (db && userId) {
-      const ordersRef = collection(db, `artifacts/${appId}/users/${userId}/orders`);
+    if (firestore && user) {
+      const ordersRef = collection(firestore, `artifacts/${appId}/users/${user.uid}/orders`);
       const q = query(ordersRef, orderBy('createdAt', 'desc'));
 
       const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -618,7 +580,7 @@ const App = () => {
 
       return () => unsubscribe();
     }
-  }, [db, userId]);
+  }, [user]);
 
   // Resetea la selección de bocados cuando cambia el paquete
   useEffect(() => {
@@ -713,7 +675,7 @@ const App = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!db || !userId || isSubmitting) return;
+    if (!firestore || !user || isSubmitting) return;
 
     setIsSubmitting(true);
     setMessage('');
@@ -761,11 +723,11 @@ const App = () => {
 
 
       if (totalBocadosRequired > 0 && totalBocadosSelected === 0) {
-        throw new Error("Por favor, selecciona la variedad de bocados/bebidas para tu combo."); // CORREGIDO mensaje
+        throw new Error("Por favor, selecciona la variedad de bocados/bebidas para tu combo.");
       }
       
       if (totalBocadosRequired > 0 && totalBocadosSelected < totalBocadosRequired) {
-          throw new Error(`Debes seleccionar un total de ${totalBocadosRequired} unidades de bocados/bebidas (Seleccionaste ${totalBocadosSelected}).`); // CORREGIDO mensaje
+          throw new Error(`Debes seleccionar un total de ${totalBocadosRequired} unidades de bocados/bebidas (Seleccionaste ${totalBocadosSelected}).`);
       }
       
       const orderData = {
@@ -781,12 +743,13 @@ const App = () => {
         totalPrice: totalPrice,
         observations: formData.observations,
         status: 'Pendiente',
-        userId: userId,
+        userId: user.uid,
+        userEmail: user.email,
         appId: appId,
         timestamp: new Date().toISOString(), 
       };
 
-      const ordersRef = collection(db, `artifacts/${appId}/users/${userId}/orders`);
+      const ordersRef = collection(firestore, `artifacts/${appId}/users/${user.uid}/orders`);
       const docRef = await addDoc(ordersRef, { ...orderData, createdAt: serverTimestamp() });
       
       orderData.orderId = docRef.id;
@@ -813,7 +776,7 @@ const App = () => {
         ...prev,
         eventDate: minDateString, 
         attendees: 20,
-        selectedPackageId: packages[0].id,
+        selectedPackageId: packages[0]?.id || 'C1',
         addonQuantities: addons.reduce((acc, addon) => ({ ...acc, [addon.name]: 0 }), {}),
         selectedBocados: menuItems.reduce((acc, item) => ({ ...acc, [item.name]: 0 }), {}),
         observations: '',
@@ -833,12 +796,30 @@ const App = () => {
     }
   };
   
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      setOrders([]);
+      setMessage('');
+    } catch (error) {
+      console.error('Error al cerrar sesión:', error);
+    }
+  };
+
   if (loading || !isAuthReady) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <LoadingSpinner />
       </div>
     );
+  }
+
+  // Si no hay usuario autenticado, mostrar Login o Register
+  if (!user) {
+    if (showRegister) {
+      return <RegisterPage onSwitchToLogin={() => setShowRegister(false)} />;
+    }
+    return <LoginPage onSwitchToRegister={() => setShowRegister(true)} />;
   }
 
   const selectedPackage = packages.find(p => p.id === formData.selectedPackageId);
@@ -866,11 +847,26 @@ const App = () => {
       <div className="max-w-4xl mx-auto">
 
         <header className="text-center mb-8 p-6 bg-white rounded-xl shadow-lg border-b-4 border-indigo-400">
-          <h1 className="text-3xl font-extrabold text-gray-900">
-             Sistema de Pedidos Coffee Break UDESA
-          </h1>
-          <p className="text-gray-500 mt-2 text-sm">Organiza tu evento de manera rápida y sencilla.</p>
-          <p className="text-xs text-gray-400 mt-2">Tu ID de Sesión: <span className="font-mono select-all">{userId || 'Autenticando...'}</span></p>
+          <div className="flex justify-between items-center">
+            <div className="flex-1"></div>
+            <div className="flex-1 text-center">
+              <h1 className="text-3xl font-extrabold text-gray-900">
+                Sistema de Pedidos Coffee Break UDESA
+              </h1>
+              <p className="text-gray-500 mt-2 text-sm">Organiza tu evento de manera rápida y sencilla.</p>
+            </div>
+            <div className="flex-1 flex justify-end">
+              <button
+                onClick={handleLogout}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-500 hover:bg-red-600 rounded-lg transition"
+              >
+                Cerrar Sesión
+              </button>
+            </div>
+          </div>
+          <p className="text-xs text-gray-400 mt-4">
+            Usuario: <span className="font-medium text-indigo-600">{user.email}</span>
+          </p>
         </header>
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -1182,7 +1178,7 @@ const App = () => {
                 )}
                 <button
                   type="submit"
-                  disabled={isSubmitting || formData.attendees <= 0 || !userId}
+                  disabled={isSubmitting || formData.attendees <= 0 || !user}
                   className="w-full py-4 px-4 border border-transparent rounded-xl shadow-lg text-lg font-bold text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 disabled:bg-indigo-300"
                 >
                   {isSubmitting ? 'Enviando Pedido...' : `Enviar Pedido por ${formatCurrency(totalPrice)}`}
@@ -1226,7 +1222,7 @@ const App = () => {
             </div>
             
             <div className="bg-white p-6 rounded-xl shadow-inner border border-gray-200">
-                <OrderList orders={orders} userId={userId} />
+                <OrderList orders={orders} userEmail={user.email} />
             </div>
 
           </div>
