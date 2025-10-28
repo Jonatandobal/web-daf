@@ -163,7 +163,8 @@ const menuItems = [
 
     // ===== CATEGORÍA BEBIDAS SIMPLES (Usada en Combo 8 y 9) =====
     { type: 'bebidaSimple', name: 'Agua Mineral', price: 0 },
-    { type: 'bebidaSimple', name: 'Gaseosa', price: 0 },
+    { type: 'bebidaSimple', name: 'Gaseosa Light', price: 0 },
+    { type: 'bebidaSimple', name: 'Gaseosa Común', price: 0 },
 ];
 
 // Definición de paquetes base (Combos actualizados con precio POR PERSONA)
@@ -275,38 +276,38 @@ const packages = [
     bocadoSimpleCount: 2,
     isNespresso: true,
   },
-  { 
-    id: 'C8S', 
-    name: '8. BIENVENIDA SIMPLE', 
-    description: '3 bocados salados simples + 1 bocado dulce simple + 1 bebida (agua o gaseosa).', 
-    basePrice: 8750, 
+  {
+    id: 'C8S',
+    name: '8. BIENVENIDA SIMPLE',
+    description: '1 bocado dulce simple + 3 bocados salados simples + 1 bebida (agua, gaseosa light o común).',
+    basePrice: 8750,
     attendeesBase: 1,
-    bocadoSaladoSimpleCount: 3,
     bocadoSimpleCount: 1,
-    bebidaSimpleCount: 1, 
+    bocadoSaladoSimpleCount: 3,
+    bebidaSimpleCount: 1,
   },
-  { 
-    id: 'C9F', 
-    name: '9. BIENVENIDA FULL', 
-    description: 'Infusiones, jugo y agua + 5 bocados salados esp. + 2 bocados dulces esp. + 1 shot dulce + 1 bebida (agua o gaseosa).', 
-    basePrice: 18500, 
+  {
+    id: 'C9F',
+    name: '9. BIENVENIDA FULL',
+    description: 'Infusiones, jugo y agua + 2 bocados dulces esp. + 1 shot dulce + 5 bocados salados esp. + 1 bebida (agua, gaseosa light o común).',
+    basePrice: 18500,
     attendeesBase: 1,
-    bocadoEspecialSaladoCount: 5,
     bocadoEspecialDulceCount: 2,
     shotDulceCount: 1,
-    bebidaSimpleCount: 1, 
+    bocadoEspecialSaladoCount: 5,
+    bebidaSimpleCount: 1,
     hasNespressoOption: true,
   },
-  { 
-    id: 'C9FN', 
-    name: '9. BIENVENIDA FULL (con NESPRESSO)', 
-    description: 'Nespresso, infusiones, jugo y agua + 5 bocados salados esp. + 2 bocados dulces esp. + 1 shot dulce + 1 bebida (agua o gaseosa).', 
-    basePrice: 20600, 
+  {
+    id: 'C9FN',
+    name: '9. BIENVENIDA FULL (con NESPRESSO)',
+    description: 'Nespresso, infusiones, jugo y agua + 2 bocados dulces esp. + 1 shot dulce + 5 bocados salados esp. + 1 bebida (agua, gaseosa light o común).',
+    basePrice: 20600,
     attendeesBase: 1,
-    bocadoEspecialSaladoCount: 5,
     bocadoEspecialDulceCount: 2,
     shotDulceCount: 1,
-    bebidaSimpleCount: 1, 
+    bocadoEspecialSaladoCount: 5,
+    bebidaSimpleCount: 1,
     isNespresso: true,
   },
 ];
@@ -976,11 +977,38 @@ const App = () => {
                     <p className="text-sm text-blue-700 italic">Elige la variedad de bocados <strong>totales</strong> que incluye tu paquete. El límite se basa en <strong>unidades por asistente</strong>.</p>
 
                     <div className="space-y-4">
-                        
+
                         <BocadoSelector
                             title="Facturas (Medialunas, Libritos, etc.)"
                             itemTypes={['bocadoFactura']}
                             maxTotalPerAttendee={selectedPackage.bocadoFacturaCount || 0}
+                            formData={formData}
+                            setFormData={setFormData}
+                            attendees={formData.attendees}
+                        />
+
+                        <BocadoSelector
+                            title="Bocados Simples Dulces (Budines, Cuadraditos, Frutas, etc.)"
+                            itemTypes={['bocadoSimple']}
+                            maxTotalPerAttendee={selectedPackage.bocadoSimpleCount || 0}
+                            formData={formData}
+                            setFormData={setFormData}
+                            attendees={formData.attendees}
+                        />
+
+                        <BocadoSelector
+                            title="Bocados Especiales Dulces (Cookies, Alfajores, Shot Yogurt)"
+                            itemTypes={['bocadoEspecialDulce']}
+                            maxTotalPerAttendee={selectedPackage.bocadoEspecialDulceCount || 0}
+                            formData={formData}
+                            setFormData={setFormData}
+                            attendees={formData.attendees}
+                        />
+
+                        <BocadoSelector
+                            title="Shots Dulces (Lemon Pie, Chocotorta, Red Velvet)"
+                            itemTypes={['shotDulce']}
+                            maxTotalPerAttendee={selectedPackage.shotDulceCount || 0}
                             formData={formData}
                             setFormData={setFormData}
                             attendees={formData.attendees}
@@ -1014,34 +1042,7 @@ const App = () => {
                         />
 
                         <BocadoSelector
-                            title="Bocados Simples (Budines, Cuadraditos, Frutas, etc.)"
-                            itemTypes={['bocadoSimple']}
-                            maxTotalPerAttendee={selectedPackage.bocadoSimpleCount || 0}
-                            formData={formData}
-                            setFormData={setFormData}
-                            attendees={formData.attendees}
-                        />
-                        
-                        <BocadoSelector
-                            title="Bocados Especiales Dulces (Cookies, Alfajores, Shot Yogurt)"
-                            itemTypes={['bocadoEspecialDulce']}
-                            maxTotalPerAttendee={selectedPackage.bocadoEspecialDulceCount || 0}
-                            formData={formData}
-                            setFormData={setFormData}
-                            attendees={formData.attendees}
-                        />
-
-                        <BocadoSelector
-                            title="Shots Dulces (Lemon Pie, Chocotorta, Red Velvet)"
-                            itemTypes={['shotDulce']}
-                            maxTotalPerAttendee={selectedPackage.shotDulceCount || 0}
-                            formData={formData}
-                            setFormData={setFormData}
-                            attendees={formData.attendees}
-                        />
-
-                        <BocadoSelector
-                            title="Bebida (Agua o Gaseosa)"
+                            title="Bebida (Agua, Gaseosa Light o Común)"
                             itemTypes={['bebidaSimple']}
                             maxTotalPerAttendee={selectedPackage.bebidaSimpleCount || 0}
                             formData={formData}
@@ -1052,7 +1053,7 @@ const App = () => {
                         {isMixtoSimple && (
                             <div className='bg-teal-50 p-3 rounded-xl border border-teal-300'>
                                 <p className='text-sm font-semibold text-teal-800 mb-2'>
-                                    Selección Mixta (Simples Dulces y Salados)
+                                    Selección Mixta (Dulces y Salados Simples)
                                     <span className={`text-xs ml-2 ${remainingMixtoSimple === 0 ? 'text-red-500 font-bold' : 'text-teal-600'}`}>
                                         ({totalSelectedMixtoSimple} de {totalMaxMixtoSimple} unidades seleccionadas)
                                     </span>
@@ -1085,7 +1086,7 @@ const App = () => {
                          {isMixtoEspecial && (
                             <div className='bg-yellow-50 p-3 rounded-xl border border-yellow-300'>
                                 <p className='text-sm font-semibold text-yellow-800 mb-2'>
-                                    Selección Mixta (Especiales Dulces y Salados)
+                                    Selección Mixta (Dulces y Salados Especiales)
                                     <span className={`text-xs ml-2 ${remainingMixtoEspecial === 0 ? 'text-red-500 font-bold' : 'text-yellow-700'}`}>
                                         ({totalSelectedMixtoEspecial} de {totalMaxMixtoEspecial} unidades seleccionadas)
                                     </span>
