@@ -365,6 +365,11 @@ const OrderList = ({ orders, userEmail }) => {
               <p className="text-sm text-gray-500">
                 <span className="font-medium">Fecha:</span> {order.eventDate} a las {order.eventTime}
               </p>
+              {order.eventLocation && order.eventLocation !== 'N/A' && (
+                <p className="text-sm text-gray-500">
+                  <span className="font-medium">Lugar:</span> {order.eventLocation}
+                </p>
+              )}
               <p className="text-xs text-gray-500">
                 <span className="font-medium">Usuario:</span> <span className="text-indigo-400 text-[10px]">{userEmail}</span>
               </p>
@@ -540,8 +545,9 @@ const App = () => {
     return {
         name: '',
         email: '',
-        eventDate: minDateString, 
+        eventDate: minDateString,
         eventTime: '10:00',
+        eventLocation: '',
         attendees: 20,
         selectedPackageId: packages[0]?.id || 'C1',
         addonQuantities: addons.reduce((acc, addon) => ({ ...acc, [addon.name]: 0 }), {}),
@@ -736,9 +742,10 @@ const App = () => {
         email: formData.email,
         eventDate: formData.eventDate,
         eventTime: formData.eventTime,
+        eventLocation: formData.eventLocation || 'N/A',
         attendees: formData.attendees,
         packageName: selectedPackage.name,
-        packagePricePerAttendee: selectedPackage.basePrice, 
+        packagePricePerAttendee: selectedPackage.basePrice,
         addons: selectedAddons,
         selectedBocados: Object.fromEntries(Object.entries(formData.selectedBocados).filter(([, quantity]) => quantity > 0)),
         totalPrice: totalPrice,
@@ -747,7 +754,7 @@ const App = () => {
         userId: user.uid,
         userEmail: user.email,
         appId: appId,
-        timestamp: new Date().toISOString(), 
+        timestamp: new Date().toISOString(),
       };
 
       const ordersRef = collection(firestore, `artifacts/${appId}/users/${user.uid}/orders`);
@@ -775,7 +782,8 @@ const App = () => {
 
       setFormData(prev => ({
         ...prev,
-        eventDate: minDateString, 
+        eventDate: minDateString,
+        eventLocation: '',
         attendees: 20,
         selectedPackageId: packages[0]?.id || 'C1',
         addonQuantities: addons.reduce((acc, addon) => ({ ...acc, [addon.name]: 0 }), {}),
@@ -888,7 +896,7 @@ const App = () => {
                       value={formData.eventDate}
                       onChange={handleInputChange}
                       required
-                      min={minDateString} 
+                      min={minDateString}
                       className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm p-3 border focus:ring-indigo-500 focus:border-indigo-500"
                     />
                   </label>
@@ -900,6 +908,17 @@ const App = () => {
                       value={formData.eventTime}
                       onChange={handleInputChange}
                       required
+                      className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm p-3 border focus:ring-indigo-500 focus:border-indigo-500"
+                    />
+                  </label>
+                  <label className="block md:col-span-2">
+                    <span className="text-gray-700 font-medium text-sm">Lugar del Evento:</span>
+                    <input
+                      type="text"
+                      name="eventLocation"
+                      value={formData.eventLocation}
+                      onChange={handleInputChange}
+                      placeholder="Ej: Sala de conferencias A, Piso 3"
                       className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm p-3 border focus:ring-indigo-500 focus:border-indigo-500"
                     />
                   </label>
