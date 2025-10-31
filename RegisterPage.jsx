@@ -57,6 +57,7 @@ const RegisterPage = ({ onSwitchToLogin }) => {
           <label className="block">
             <span className="text-gray-700 font-medium">Email:</span>
             <input
+            
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
