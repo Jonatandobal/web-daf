@@ -860,7 +860,7 @@ const App = () => {
             <div className="flex-1"></div>
             <div className="flex-1 text-center">
               <h1 className="text-3xl font-extrabold text-gray-900">
-                Sistema de Pedidos Coffee Break UDESA
+                Sistema de Pedidos Coffee Break
               </h1>
               <p className="text-gray-500 mt-2 text-sm">Organiza tu evento de manera rápida y sencilla.</p>
             </div>
