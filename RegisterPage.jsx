@@ -49,7 +49,7 @@ const RegisterPage = ({ onSwitchToLogin }) => {
     <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
       <div className="max-w-md w-full bg-white rounded-xl shadow-xl p-8">
         <div className="text-center mb-6">
-          <h2 className="text-3xl font-bold text-gray-900">Sistema Coffee Break UDESA</h2>
+          <h2 className="text-3xl font-bold text-gray-900">Sistema Coffee Break</h2>
           <p className="text-gray-500 mt-2">Crear Cuenta</p>
         </div>
         
