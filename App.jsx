@@ -1,9 +1,10 @@
 import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { collection, query, addDoc, onSnapshot, orderBy, serverTimestamp } from 'firebase/firestore';
+import { collection, query, addDoc, onSnapshot, orderBy, serverTimestamp, doc, getDoc } from 'firebase/firestore';
 import React, { useState, useEffect, useMemo } from 'react';
 import { auth, db as firestore, appId } from './firebase.js';
 import LoginPage from './LoginPage.jsx';
 import RegisterPage from './RegisterPage.jsx';
+import AdminPanel from './AdminPanel.jsx';
 
 // --- CONFIGURACIÓN DE DATA ---
 
@@ -17,7 +18,8 @@ const getMinDate = () => {
 };
 
 // ========== MENÚ DE BOCADOS ACTUALIZADO - OCTUBRE 2025 ==========
-const menuItems = [
+// Valores por defecto - se pueden sobrescribir con precios desde Firebase
+const getDefaultMenuItems = () => [
     // ===== CATEGORÍA FACTURAS (Usada en Combo 2) =====
     { type: 'bocadoFactura', name: 'Medialuna de Manteca 🆕', price: 100 },
     { type: 'bocadoFactura', name: 'Medialuna de Grasa 🆕', price: 100 },
@@ -168,7 +170,7 @@ const menuItems = [
 ];
 
 // Definición de paquetes base (Combos actualizados con precio POR PERSONA)
-const packages = [
+const getDefaultPackages = () => [
   { 
     id: 'C1', 
     name: '1. Coffee Break (Simple)', 
@@ -313,7 +315,7 @@ const packages = [
 ];
 
 // Definición de add-ons/extras actualizados
-const addons = [
+const getDefaultAddons = () => [
   { name: 'Yogurt Bebible Frutilla/Vainilla (Jarra x Litro)', price: 5700 },
   { name: 'Agua Mineral (grande 1.5lts)', price: 2200 },
   { name: 'Gaseosa (grande)', price: 4700 },
@@ -414,28 +416,29 @@ const OrderList = ({ orders, userEmail }) => {
 };
 
 // Componente para seleccionar bocados dentro de un combo
-const BocadoSelector = ({ 
-    title, 
-    itemTypes, 
-    maxTotalPerAttendee, 
-    formData, 
-    setFormData, 
+const BocadoSelector = ({
+    title,
+    itemTypes,
+    maxTotalPerAttendee,
+    formData,
+    setFormData,
     attendees,
-    otherItemTypes = [], 
-    sharedMaxTotalPerAttendee = 0 
+    otherItemTypes = [],
+    sharedMaxTotalPerAttendee = 0,
+    menuItems = []
 }) => {
-    
+
     const maxToUse = sharedMaxTotalPerAttendee > 0 ? sharedMaxTotalPerAttendee : maxTotalPerAttendee;
 
     const availableItems = useMemo(() => {
         if (!itemTypes) return [];
         return menuItems.filter(item => itemTypes.includes(item.type));
-    }, [itemTypes]);
+    }, [itemTypes, menuItems]);
 
     const otherAvailableItems = useMemo(() => {
         if (!otherItemTypes) return [];
         return menuItems.filter(item => otherItemTypes.includes(item.type));
-    }, [otherItemTypes]);
+    }, [otherItemTypes, menuItems]);
     
     const currentTotalSelected = useMemo(() => {
         const thisCategoryTotal = availableItems.reduce((sum, item) => sum + (formData.selectedBocados[item.name] || 0), 0);
@@ -535,6 +538,12 @@ const App = () => {
   const [message, setMessage] = useState('');
   const [showRegister, setShowRegister] = useState(false);
 
+  // Estados para precios dinámicos (cargados desde Firebase o valores por defecto)
+  const [menuItems, setMenuItems] = useState(getDefaultMenuItems());
+  const [packages, setPackages] = useState(getDefaultPackages());
+  const [addons, setAddons] = useState(getDefaultAddons());
+  const [pricesLoaded, setPricesLoaded] = useState(false);
+
   // SOLUCION: Calcular minDateString ANTES de usarlo en el estado inicial
   const minDateString = useMemo(() => getMinDate(), []);
 
@@ -557,6 +566,33 @@ const App = () => {
   });
 
   // --- HOOKS DE FIREBASE ---
+
+  // Cargar precios desde Firebase al iniciar
+  useEffect(() => {
+    const loadPrices = async () => {
+      try {
+        const pricesDocRef = doc(firestore, 'prices', appId);
+        const pricesSnap = await getDoc(pricesDocRef);
+
+        if (pricesSnap.exists()) {
+          const data = pricesSnap.data();
+          if (data.menuItems) setMenuItems(data.menuItems);
+          if (data.packages) setPackages(data.packages);
+          if (data.addons) setAddons(data.addons);
+          console.log('✅ Precios cargados desde Firebase');
+        } else {
+          console.log('ℹ️ Usando precios por defecto (no hay datos en Firebase)');
+        }
+      } catch (error) {
+        console.error('Error cargando precios desde Firebase:', error);
+        console.log('ℹ️ Usando precios por defecto debido a error');
+      } finally {
+        setPricesLoaded(true);
+      }
+    };
+
+    loadPrices();
+  }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -588,6 +624,18 @@ const App = () => {
       return () => unsubscribe();
     }
   }, [user]);
+
+  // Actualizar formData cuando se carguen los precios por primera vez
+  useEffect(() => {
+    if (pricesLoaded) {
+      setFormData(prev => ({
+        ...prev,
+        selectedPackageId: packages[0]?.id || 'C1',
+        addonQuantities: addons.reduce((acc, addon) => ({ ...acc, [addon.name]: 0 }), {}),
+        selectedBocados: menuItems.reduce((acc, item) => ({ ...acc, [item.name]: 0 }), {}),
+      }));
+    }
+  }, [pricesLoaded]);
 
   // Resetea la selección de bocados cuando cambia el paquete
   useEffect(() => {
@@ -850,6 +898,13 @@ const App = () => {
   const totalMaxMixtoEspecial = (selectedPackage?.bocadoEspecialTotalCount || 0) * formData.attendees;
   const remainingMixtoEspecial = totalMaxMixtoEspecial - totalSelectedMixtoEspecial;
 
+  // Detectar si estamos en la ruta /admin
+  const isAdminRoute = window.location.pathname === '/admin';
+
+  // Si estamos en la ruta /admin, mostrar el panel de administración
+  if (isAdminRoute) {
+    return <AdminPanel />;
+  }
 
   return (
     <div className="min-h-screen bg-gray-100 p-4 sm:p-10 font-sans">
@@ -1004,6 +1059,7 @@ const App = () => {
                             formData={formData}
                             setFormData={setFormData}
                             attendees={formData.attendees}
+                            menuItems={menuItems}
                         />
 
                         <BocadoSelector
@@ -1013,6 +1069,7 @@ const App = () => {
                             formData={formData}
                             setFormData={setFormData}
                             attendees={formData.attendees}
+                            menuItems={menuItems}
                         />
 
                         <BocadoSelector
@@ -1022,6 +1079,7 @@ const App = () => {
                             formData={formData}
                             setFormData={setFormData}
                             attendees={formData.attendees}
+                            menuItems={menuItems}
                         />
 
                         <BocadoSelector
@@ -1031,6 +1089,7 @@ const App = () => {
                             formData={formData}
                             setFormData={setFormData}
                             attendees={formData.attendees}
+                            menuItems={menuItems}
                         />
 
                         <BocadoSelector
@@ -1040,6 +1099,7 @@ const App = () => {
                             formData={formData}
                             setFormData={setFormData}
                             attendees={formData.attendees}
+                            menuItems={menuItems}
                         />
 
                         <BocadoSelector
@@ -1049,6 +1109,7 @@ const App = () => {
                             formData={formData}
                             setFormData={setFormData}
                             attendees={formData.attendees}
+                            menuItems={menuItems}
                         />
 
                         <BocadoSelector
@@ -1058,6 +1119,7 @@ const App = () => {
                             formData={formData}
                             setFormData={setFormData}
                             attendees={formData.attendees}
+                            menuItems={menuItems}
                         />
 
                         <BocadoSelector
@@ -1067,6 +1129,7 @@ const App = () => {
                             formData={formData}
                             setFormData={setFormData}
                             attendees={formData.attendees}
+                            menuItems={menuItems}
                         />
                          
                         {isMixtoSimple && (
