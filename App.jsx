@@ -173,7 +173,7 @@ const packages = [
     id: 'C1', 
     name: '1. Coffee Break (Simple)', 
     description: 'Infusiones, jugo y agua.', 
-    [cite_start]basePrice: 2300, // [cite: 74] Actualizado de 2200
+    basePrice: 2300,
     attendeesBase: 1, 
     hasNespressoOption: true,
   },
@@ -181,7 +181,7 @@ const packages = [
     id: 'C1N', 
     name: '1. Coffee Break (con NESPRESSO)', 
     description: 'Nespresso, infusiones, jugo y agua.', 
-    [cite_start]basePrice: 3500, // [cite: 75] Actualizado de 3400
+    basePrice: 3500,
     attendeesBase: 1, 
     isNespresso: true,
   },
@@ -189,7 +189,7 @@ const packages = [
     id: 'C2', 
     name: '2. Coffee Break + 2 Facturas', 
     description: 'Infusiones, jugo y agua + 2 Facturas.', 
-    [cite_start]basePrice: 4000, // [cite: 77] Actualizado de 3800
+    basePrice: 4000,
     attendeesBase: 1,
     bocadoFacturaCount: 2,
     hasNespressoOption: true,
@@ -198,7 +198,7 @@ const packages = [
     id: 'C2N', 
     name: '2. Coffee Break + 2 Facturas (con NESPRESSO)', 
     description: 'Nespresso, infusiones, jugo y agua + 2 Facturas.', 
-    [cite_start]basePrice: 5800, // [cite: 78] Actualizado de 5600
+    basePrice: 5800,
     attendeesBase: 1,
     bocadoFacturaCount: 2,
     isNespresso: true,
@@ -207,7 +207,7 @@ const packages = [
     id: 'C3', 
     name: '3. Coffee Break + 2 Bocados Simples (Mixto)', 
     description: 'Infusiones, jugo y agua + 2 bocados simples (Dulce y/o Salado).', 
-    [cite_start]basePrice: 5400, // [cite: 80] Actualizado de 5200
+    basePrice: 5400,
     attendeesBase: 1,
     bocadoSimpleTotalCount: 2, 
     hasNespressoOption: true,
@@ -216,7 +216,7 @@ const packages = [
     id: 'C3N', 
     name: '3. Coffee Break + 2 Bocados Simples (con NESPRESSO)', 
     description: 'Nespresso, infusiones, jugo y agua + 2 bocados simples (Dulce y/o Salado).', 
-    [cite_start]basePrice: 6800, // [cite: 81] Actualizado de 6550
+    basePrice: 6800,
     attendeesBase: 1,
     bocadoSimpleTotalCount: 2, 
     isNespresso: true,
@@ -225,7 +225,7 @@ const packages = [
     id: 'C4', 
     name: '4. Coffee Break + 2 Bocados Especiales (Mixto)', 
     description: 'Infusiones, jugo y agua + 2 bocados especiales (Dulce y/o Salado).', 
-    [cite_start]basePrice: 6000, // [cite: 82] Actualizado de 5800
+    basePrice: 6000,
     attendeesBase: 1,
     bocadoEspecialTotalCount: 2,
     hasNespressoOption: true,
@@ -234,7 +234,7 @@ const packages = [
     id: 'C4N', 
     name: '4. Coffee Break + 2 Bocados Especiales (con NESPRESSO)', 
     description: 'Nespresso, infusiones, jugo y agua + 2 bocados especiales (Dulce y/o Salado).', 
-    [cite_start]basePrice: 7900, // [cite: 83] Actualizado de 7550
+    basePrice: 7900,
     attendeesBase: 1,
     bocadoEspecialTotalCount: 2,
     isNespresso: true,
@@ -243,7 +243,7 @@ const packages = [
     id: 'C5', 
     name: '5. Coffee Break + 2 Bocados Salados Especiales', 
     description: 'Infusiones, jugo y agua + 2 bocados salados especiales.', 
-    [cite_start]basePrice: 6900, // [cite: 84] Actualizado de 6600
+    basePrice: 6900,
     attendeesBase: 1,
     bocadoEspecialSaladoCount: 2,
     hasNespressoOption: true,
@@ -252,7 +252,7 @@ const packages = [
     id: 'C5N', 
     name: '5. Coffee Break + 2 Bocados Salados Especiales (con NESPRESSO)', 
     description: 'Nespresso, infusiones, jugo y agua + 2 bocados salados especiales.', 
-    [cite_start]basePrice: 8700, // [cite: 85] Actualizado de 8400
+    basePrice: 8700,
     attendeesBase: 1,
     bocadoEspecialSaladoCount: 2,
     isNespresso: true,
@@ -261,7 +261,7 @@ const packages = [
     id: 'C6N', 
     name: '6. Coffee Break (NESPRESSO) + 4 Bocados Especiales (Mixto)', 
     description: 'Nespresso, infusiones, jugo y agua + 4 bocados especiales (Dulce y/o Salado).', 
-    [cite_start]basePrice: 8700, // [cite: 86] Actualizado de 8400
+    basePrice: 8700,
     attendeesBase: 1,
     bocadoEspecialTotalCount: 4, 
     isNespresso: true,
@@ -270,7 +270,7 @@ const packages = [
     id: 'C7N', 
     name: '7. Coffee Break (NESPRESSO) + 2 Empanadas + 2 Bocados Simples', 
     description: 'Nespresso, infusiones, jugo y agua + 2 empanadas + 2 bocados simples.', 
-    [cite_start]basePrice: 10000, // [cite: 87] Actualizado de 9600
+    basePrice: 10000,
     attendeesBase: 1,
     empanadaCount: 2, 
     bocadoSimpleCount: 2,
@@ -280,7 +280,7 @@ const packages = [
     id: 'C8S',
     name: '8. BIENVENIDA SIMPLE',
     description: '1 bocado dulce simple + 3 bocados salados simples + 1 bebida (agua, gaseosa light o común).',
-    [cite_start]basePrice: 9100, // [cite: 89] Actualizado de 8750
+    basePrice: 9100,
     attendeesBase: 1,
     bocadoSimpleCount: 1,
     bocadoSaladoSimpleCount: 3,
@@ -290,7 +290,7 @@ const packages = [
     id: 'C9F',
     name: '9. BIENVENIDA FULL',
     description: 'Infusiones, jugo y agua + 2 bocados dulces esp. + 1 shot dulce + 5 bocados salados esp. + 1 bebida (agua, gaseosa light o común).',
-    [cite_start]basePrice: 19200, // [cite: 92] Actualizado de 18500
+    basePrice: 19200,
     attendeesBase: 1,
     bocadoEspecialDulceCount: 2,
     shotDulceCount: 1,
@@ -302,7 +302,7 @@ const packages = [
     id: 'C9FN',
     name: '9. BIENVENIDA FULL (con NESPRESSO)',
     description: 'Nespresso, infusiones, jugo y agua + 2 bocados dulces esp. + 1 shot dulce + 5 bocados salados esp. + 1 bebida (agua, gaseosa light o común).',
-    [cite_start]basePrice: 21400, // [cite: 93] Actualizado de 20600
+    basePrice: 21400,
     attendeesBase: 1,
     bocadoEspecialDulceCount: 2,
     shotDulceCount: 1,
@@ -314,16 +314,16 @@ const packages = [
 
 // Definición de add-ons/extras actualizados
 const addons = [
-  [cite_start]{ name: 'Yogurt Bebible Frutilla/Vainilla (Jarra x Litro)', price: 5700 }, // [cite: 95] Actualizado de 5500
-  [cite_start]{ name: 'Agua Mineral', price: 2200 }, // [cite: 96] Actualizado de 2100 (Mapeado de "Agua mineral grande 1.5lts")
-  [cite_start]{ name: 'Gaseosa', price: 4700 }, // [cite: 97] Actualizado de 4500 (Mapeado de "Gaseosa grande")
-  [cite_start]{ name: 'Jugo Cepita x Litro', price: 2600 }, // [cite: 97] Actualizado de 2500
-  [cite_start]{ name: 'Bocaditos Salados', price: 2300 }, // [cite: 97] Actualizado de 2200
-  [cite_start]{ name: 'Bocaditos Dulces', price: 700 }, // [cite: 97] Actualizado de 650
-  [cite_start]{ name: 'Frutas', price: 1400 }, // [cite: 97] Actualizado de 1300
-  [cite_start]{ name: 'Personal de Apoyo: Jornada 3 hs', price: 21800 }, // [cite: 99] Actualizado de 21000
-  [cite_start]{ name: 'Personal de Apoyo: Jornada 6 hs', price: 23900 }, // [cite: 100] Actualizado de 23000
-  [cite_start]{ name: 'Personal de Apoyo: Jornada 9 hs', price: 28100 }, // [cite: 101] Actualizado de 27000
+  { name: 'Yogurt Bebible Frutilla/Vainilla (Jarra x Litro)', price: 5700 },
+  { name: 'Agua Mineral (grande 1.5lts)', price: 2200 },
+  { name: 'Gaseosa (grande)', price: 4700 },
+  { name: 'Jugo Cepita x Litro', price: 2600 },
+  { name: 'Bocaditos Salados (bandeja)', price: 2300 },
+  { name: 'Bocaditos Dulces (bandeja)', price: 700 },
+  { name: 'Frutas (bandeja)', price: 1400 },
+  { name: 'Personal de Apoyo: Jornada 3 hs', price: 21800 },
+  { name: 'Personal de Apoyo: Jornada 6 hs', price: 23900 },
+  { name: 'Personal de Apoyo: Jornada 9 hs', price: 28100 },
 ];
 
 // --- FUNCIONES DE UTILIDAD ---
