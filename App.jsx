@@ -871,6 +871,14 @@ const App = () => {
     );
   }
 
+  // Detectar si estamos en la ruta /admin ANTES de verificar autenticación
+  const isAdminRoute = window.location.pathname === '/admin';
+
+  // Si estamos en la ruta /admin, mostrar el panel de administración
+  if (isAdminRoute) {
+    return <AdminPanel />;
+  }
+
   // Si no hay usuario autenticado, mostrar Login o Register
   if (!user) {
     if (showRegister) {
@@ -897,14 +905,6 @@ const App = () => {
   const totalSelectedMixtoEspecial = isMixtoEspecial ? getTotalSelectedForMixto(['bocadoEspecialDulce', 'bocadoEspecialSalado']) : 0;
   const totalMaxMixtoEspecial = (selectedPackage?.bocadoEspecialTotalCount || 0) * formData.attendees;
   const remainingMixtoEspecial = totalMaxMixtoEspecial - totalSelectedMixtoEspecial;
-
-  // Detectar si estamos en la ruta /admin
-  const isAdminRoute = window.location.pathname === '/admin';
-
-  // Si estamos en la ruta /admin, mostrar el panel de administración
-  if (isAdminRoute) {
-    return <AdminPanel />;
-  }
 
   return (
     <div className="min-h-screen bg-gray-100 p-4 sm:p-10 font-sans">
