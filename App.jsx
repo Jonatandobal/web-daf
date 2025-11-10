@@ -318,6 +318,7 @@ const getDefaultPackages = () => [
 const getDefaultAddons = () => [
   { name: 'Yogurt Bebible Frutilla/Vainilla (Jarra x Litro)', price: 5700 },
   { name: 'Agua Mineral (grande 1.5lts)', price: 2200 },
+  { name: 'Agua mineral chica', price: 1560 },
   { name: 'Gaseosa (grande)', price: 4700 },
   { name: 'Jugo Cepita x Litro', price: 2600 },
   { name: 'Bocaditos Salados (bandeja)', price: 2300 },
