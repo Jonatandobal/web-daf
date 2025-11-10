@@ -579,7 +579,27 @@ const App = () => {
           const data = pricesSnap.data();
           if (data.menuItems) setMenuItems(data.menuItems);
           if (data.packages) setPackages(data.packages);
-          if (data.addons) setAddons(data.addons);
+
+          // Merge addons: mantener precios de Firebase pero agregar nuevos del código
+          if (data.addons) {
+            const defaultAddons = getDefaultAddons();
+            const firebaseAddons = data.addons;
+            const mergedAddons = [...firebaseAddons];
+
+            // Agregar addons que están en el código pero no en Firebase
+            defaultAddons.forEach(defaultAddon => {
+              const exists = firebaseAddons.some(fbAddon => fbAddon.name === defaultAddon.name);
+              if (!exists) {
+                mergedAddons.push(defaultAddon);
+                console.log(`✨ Nuevo adicional detectado: ${defaultAddon.name}`);
+              }
+            });
+
+            setAddons(mergedAddons);
+          } else {
+            setAddons(getDefaultAddons());
+          }
+
           console.log('✅ Precios cargados desde Firebase');
         } else {
           console.log('ℹ️ Usando precios por defecto (no hay datos en Firebase)');
