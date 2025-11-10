@@ -318,7 +318,7 @@ const getDefaultPackages = () => [
 const getDefaultAddons = () => [
   { name: 'Yogurt Bebible Frutilla/Vainilla (Jarra x Litro)', price: 5700 },
   { name: 'Agua Mineral (grande 1.5lts)', price: 2200 },
-  { name: 'Agua mineral chica', price: 1560 },
+  { name: 'Agua Mineral Chica', price: 1560 },
   { name: 'Gaseosa (grande)', price: 4700 },
   { name: 'Jugo Cepita x Litro', price: 2600 },
   { name: 'Bocaditos Salados (bandeja)', price: 2300 },
@@ -578,8 +578,54 @@ const App = () => {
         if (pricesSnap.exists()) {
           const data = pricesSnap.data();
           if (data.menuItems) setMenuItems(data.menuItems);
-          if (data.packages) setPackages(data.packages);
-          if (data.addons) setAddons(data.addons);
+
+          // Merge packages: actualizar propiedades de paquetes del código sin perder precios de Firebase
+          if (data.packages) {
+            const defaultPackages = getDefaultPackages();
+            const firebasePackages = data.packages;
+            const mergedPackages = firebasePackages.map(fbPkg => {
+              const defaultPkg = defaultPackages.find(dp => dp.id === fbPkg.id);
+              if (defaultPkg) {
+                // Mantener precio de Firebase pero actualizar propiedades del código
+                return { ...defaultPkg, basePrice: fbPkg.basePrice };
+              }
+              return fbPkg;
+            });
+
+            // Agregar paquetes nuevos que están en código pero no en Firebase
+            defaultPackages.forEach(defaultPkg => {
+              const exists = firebasePackages.some(fbPkg => fbPkg.id === defaultPkg.id);
+              if (!exists) {
+                mergedPackages.push(defaultPkg);
+                console.log(`✨ Nuevo paquete detectado: ${defaultPkg.name}`);
+              }
+            });
+
+            setPackages(mergedPackages);
+          } else {
+            setPackages(getDefaultPackages());
+          }
+
+          // Merge addons: mantener precios de Firebase pero agregar nuevos del código
+          if (data.addons) {
+            const defaultAddons = getDefaultAddons();
+            const firebaseAddons = data.addons;
+            const mergedAddons = [...firebaseAddons];
+
+            // Agregar addons que están en el código pero no en Firebase
+            defaultAddons.forEach(defaultAddon => {
+              const exists = firebaseAddons.some(fbAddon => fbAddon.name === defaultAddon.name);
+              if (!exists) {
+                mergedAddons.push(defaultAddon);
+                console.log(`✨ Nuevo adicional detectado: ${defaultAddon.name}`);
+              }
+            });
+
+            setAddons(mergedAddons);
+          } else {
+            setAddons(getDefaultAddons());
+          }
+
           console.log('✅ Precios cargados desde Firebase');
         } else {
           console.log('ℹ️ Usando precios por defecto (no hay datos en Firebase)');
