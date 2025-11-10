@@ -578,7 +578,33 @@ const App = () => {
         if (pricesSnap.exists()) {
           const data = pricesSnap.data();
           if (data.menuItems) setMenuItems(data.menuItems);
-          if (data.packages) setPackages(data.packages);
+
+          // Merge packages: actualizar propiedades de paquetes del código sin perder precios de Firebase
+          if (data.packages) {
+            const defaultPackages = getDefaultPackages();
+            const firebasePackages = data.packages;
+            const mergedPackages = firebasePackages.map(fbPkg => {
+              const defaultPkg = defaultPackages.find(dp => dp.id === fbPkg.id);
+              if (defaultPkg) {
+                // Mantener precio de Firebase pero actualizar propiedades del código
+                return { ...defaultPkg, basePrice: fbPkg.basePrice };
+              }
+              return fbPkg;
+            });
+
+            // Agregar paquetes nuevos que están en código pero no en Firebase
+            defaultPackages.forEach(defaultPkg => {
+              const exists = firebasePackages.some(fbPkg => fbPkg.id === defaultPkg.id);
+              if (!exists) {
+                mergedPackages.push(defaultPkg);
+                console.log(`✨ Nuevo paquete detectado: ${defaultPkg.name}`);
+              }
+            });
+
+            setPackages(mergedPackages);
+          } else {
+            setPackages(getDefaultPackages());
+          }
 
           // Merge addons: mantener precios de Firebase pero agregar nuevos del código
           if (data.addons) {

@@ -37,12 +37,43 @@ const AdminPanel = () => {
 
       if (docSnap.exists()) {
         const data = docSnap.data();
+        let hasChanges = false;
+
+        // Merge packages: actualizar propiedades de paquetes del código sin perder precios de Firebase
+        const defaultPackages = getDefaultPackages();
+        const firebasePackages = data.packages || [];
+        const mergedPackages = firebasePackages.map(fbPkg => {
+          const defaultPkg = defaultPackages.find(dp => dp.id === fbPkg.id);
+          if (defaultPkg) {
+            // Verificar si hay cambios en las propiedades (excluyendo basePrice)
+            const propsChanged = Object.keys(defaultPkg).some(key => {
+              if (key === 'basePrice') return false;
+              return JSON.stringify(defaultPkg[key]) !== JSON.stringify(fbPkg[key]);
+            });
+            if (propsChanged) {
+              console.log(`🔄 Actualizando propiedades del paquete: ${defaultPkg.name}`);
+              hasChanges = true;
+            }
+            // Mantener precio de Firebase pero actualizar propiedades del código
+            return { ...defaultPkg, basePrice: fbPkg.basePrice };
+          }
+          return fbPkg;
+        });
+
+        // Agregar paquetes nuevos que están en código pero no en Firebase
+        defaultPackages.forEach(defaultPkg => {
+          const exists = firebasePackages.some(fbPkg => fbPkg.id === defaultPkg.id);
+          if (!exists) {
+            mergedPackages.push(defaultPkg);
+            console.log(`✨ Nuevo paquete detectado: ${defaultPkg.name}`);
+            hasChanges = true;
+          }
+        });
 
         // Merge addons: mantener precios de Firebase pero agregar nuevos del código
         const defaultAddons = getDefaultAddons();
         const firebaseAddons = data.addons || [];
         const mergedAddons = [...firebaseAddons];
-        let hasNewAddons = false;
 
         // Agregar addons que están en el código pero no en Firebase
         defaultAddons.forEach(defaultAddon => {
@@ -50,26 +81,25 @@ const AdminPanel = () => {
           if (!exists) {
             mergedAddons.push(defaultAddon);
             console.log(`✨ Nuevo adicional detectado: ${defaultAddon.name}`);
-            hasNewAddons = true;
+            hasChanges = true;
           }
         });
 
         const loadedMenuItems = data.menuItems || getDefaultMenuItems();
-        const loadedPackages = data.packages || getDefaultPackages();
 
         setMenuItems(loadedMenuItems);
-        setPackages(loadedPackages);
+        setPackages(mergedPackages);
         setAddons(mergedAddons);
 
-        // Si detectamos nuevos addons, guardar automáticamente
-        if (hasNewAddons) {
+        // Si detectamos cambios, guardar automáticamente
+        if (hasChanges) {
           await setDoc(docRef, {
             menuItems: loadedMenuItems,
-            packages: loadedPackages,
+            packages: mergedPackages,
             addons: mergedAddons,
             lastUpdated: new Date().toISOString()
           });
-          setMessage({ type: 'success', text: '✅ Nuevos adicionales detectados y guardados automáticamente' });
+          setMessage({ type: 'success', text: '✅ Cambios detectados y guardados automáticamente' });
         } else {
           setMessage({ type: 'success', text: 'Precios cargados correctamente' });
         }
