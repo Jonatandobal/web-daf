@@ -37,10 +37,42 @@ const AdminPanel = () => {
 
       if (docSnap.exists()) {
         const data = docSnap.data();
-        setMenuItems(data.menuItems || getDefaultMenuItems());
-        setPackages(data.packages || getDefaultPackages());
-        setAddons(data.addons || getDefaultAddons());
-        setMessage({ type: 'success', text: 'Precios cargados correctamente' });
+
+        // Merge addons: mantener precios de Firebase pero agregar nuevos del código
+        const defaultAddons = getDefaultAddons();
+        const firebaseAddons = data.addons || [];
+        const mergedAddons = [...firebaseAddons];
+        let hasNewAddons = false;
+
+        // Agregar addons que están en el código pero no en Firebase
+        defaultAddons.forEach(defaultAddon => {
+          const exists = firebaseAddons.some(fbAddon => fbAddon.name === defaultAddon.name);
+          if (!exists) {
+            mergedAddons.push(defaultAddon);
+            console.log(`✨ Nuevo adicional detectado: ${defaultAddon.name}`);
+            hasNewAddons = true;
+          }
+        });
+
+        const loadedMenuItems = data.menuItems || getDefaultMenuItems();
+        const loadedPackages = data.packages || getDefaultPackages();
+
+        setMenuItems(loadedMenuItems);
+        setPackages(loadedPackages);
+        setAddons(mergedAddons);
+
+        // Si detectamos nuevos addons, guardar automáticamente
+        if (hasNewAddons) {
+          await setDoc(docRef, {
+            menuItems: loadedMenuItems,
+            packages: loadedPackages,
+            addons: mergedAddons,
+            lastUpdated: new Date().toISOString()
+          });
+          setMessage({ type: 'success', text: '✅ Nuevos adicionales detectados y guardados automáticamente' });
+        } else {
+          setMessage({ type: 'success', text: 'Precios cargados correctamente' });
+        }
       } else {
         // Si no existen precios guardados, usar los valores por defecto
         setMenuItems(getDefaultMenuItems());
