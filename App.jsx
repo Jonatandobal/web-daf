@@ -211,8 +211,7 @@ const getDefaultPackages = () => [
     description: 'Infusiones, jugo y agua + 2 bocados simples (Dulce y/o Salado).',
     basePrice: 5400,
     attendeesBase: 1,
-    bocadoSimpleCount: 2,
-    bocadoSaladoSimpleCount: 2,
+    bocadoSimpleTotalCount: 2, // Total compartido entre dulces y salados
     hasNespressoOption: true,
   },
   {
@@ -221,8 +220,7 @@ const getDefaultPackages = () => [
     description: 'Nespresso, infusiones, jugo y agua + 2 bocados simples (Dulce y/o Salado).',
     basePrice: 6800,
     attendeesBase: 1,
-    bocadoSimpleCount: 2,
-    bocadoSaladoSimpleCount: 2,
+    bocadoSimpleTotalCount: 2, // Total compartido entre dulces y salados
     isNespresso: true,
   },
   {
@@ -231,8 +229,7 @@ const getDefaultPackages = () => [
     description: 'Infusiones, jugo y agua + 2 bocados especiales (Dulce y/o Salado).',
     basePrice: 6000,
     attendeesBase: 1,
-    bocadoEspecialDulceCount: 2,
-    bocadoEspecialSaladoCount: 2,
+    bocadoEspecialTotalCount: 2, // Total compartido entre dulces y salados
     hasNespressoOption: true,
   },
   {
@@ -241,8 +238,7 @@ const getDefaultPackages = () => [
     description: 'Nespresso, infusiones, jugo y agua + 2 bocados especiales (Dulce y/o Salado).',
     basePrice: 7900,
     attendeesBase: 1,
-    bocadoEspecialDulceCount: 2,
-    bocadoEspecialSaladoCount: 2,
+    bocadoEspecialTotalCount: 2, // Total compartido entre dulces y salados
     isNespresso: true,
   },
   { 
@@ -490,17 +486,28 @@ const BocadoSelector = ({
     return (
         <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-inner">
             <h4 className="font-semibold text-gray-800 mb-2">
-                {title} 
+                {title}
                 {sharedMaxTotalPerAttendee === 0 && (
-                    <span className={`text-xs ${remaining === 0 ? 'text-red-500 font-bold' : 'text-indigo-600'}`}>
+                    <span className={`text-xs ml-2 ${remaining === 0 ? 'text-red-500 font-bold' : 'text-indigo-600'}`}>
                         ({currentTotalSelected} de {totalMax} unidades seleccionadas)
                     </span>
                 )}
+                {sharedMaxTotalPerAttendee > 0 && (
+                    <span className={`text-xs ml-2 ${remaining === 0 ? 'text-red-500 font-bold' : 'text-orange-600'}`}>
+                        (Límite compartido: {currentTotalSelected} de {totalMax} unidades)
+                    </span>
+                )}
             </h4>
-            
+
             {sharedMaxTotalPerAttendee === 0 && (
                 <p className="text-xs text-gray-500 mb-3">
                     Máximo de unidades <strong>TOTALES</strong> a elegir: <strong>{totalMax}</strong> (Base por asistente: {maxToUse} unidad/es)
+                </p>
+            )}
+
+            {sharedMaxTotalPerAttendee > 0 && (
+                <p className="text-xs text-orange-600 font-semibold mb-3 bg-orange-50 p-2 rounded">
+                    ⚠️ Este selector comparte el límite total con otra categoría. Total disponible entre ambas categorías: <strong>{totalMax}</strong> unidades ({maxToUse} por asistente)
                 </p>
             )}
             
@@ -1083,6 +1090,8 @@ const App = () => {
                             title="Bocados Simples Dulces (Budines, Cuadraditos, Frutas, etc.)"
                             itemTypes={['bocadoSimple']}
                             maxTotalPerAttendee={selectedPackage.bocadoSimpleCount || 0}
+                            otherItemTypes={['bocadoSaladoSimple']}
+                            sharedMaxTotalPerAttendee={selectedPackage.bocadoSimpleTotalCount || 0}
                             formData={formData}
                             setFormData={setFormData}
                             attendees={formData.attendees}
@@ -1093,6 +1102,8 @@ const App = () => {
                             title="Bocados Especiales Dulces (Cookies, Alfajores, Shot Yogurt)"
                             itemTypes={['bocadoEspecialDulce']}
                             maxTotalPerAttendee={selectedPackage.bocadoEspecialDulceCount || 0}
+                            otherItemTypes={['bocadoEspecialSalado']}
+                            sharedMaxTotalPerAttendee={selectedPackage.bocadoEspecialTotalCount || 0}
                             formData={formData}
                             setFormData={setFormData}
                             attendees={formData.attendees}
@@ -1113,6 +1124,8 @@ const App = () => {
                             title="Bocados Salados Simples (Medialuna J/Q, Petit Pain, Sándwich de Miga)"
                             itemTypes={['bocadoSaladoSimple']}
                             maxTotalPerAttendee={selectedPackage.bocadoSaladoSimpleCount || 0}
+                            otherItemTypes={['bocadoSimple']}
+                            sharedMaxTotalPerAttendee={selectedPackage.bocadoSimpleTotalCount || 0}
                             formData={formData}
                             setFormData={setFormData}
                             attendees={formData.attendees}
@@ -1123,6 +1136,8 @@ const App = () => {
                             title="Bocados Especiales Salados (Wraps, Pizzetas, etc.)"
                             itemTypes={['bocadoEspecialSalado']}
                             maxTotalPerAttendee={selectedPackage.bocadoEspecialSaladoCount || 0}
+                            otherItemTypes={['bocadoEspecialDulce']}
+                            sharedMaxTotalPerAttendee={selectedPackage.bocadoEspecialTotalCount || 0}
                             formData={formData}
                             setFormData={setFormData}
                             attendees={formData.attendees}
