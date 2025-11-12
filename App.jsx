@@ -208,19 +208,19 @@ const getDefaultPackages = () => [
   {
     id: 'C3',
     name: '3. Coffee Break + 2 Bocados Simples (Mixto)',
-    description: 'Infusiones, jugo y agua + 2 bocados simples (Dulces).',
+    description: 'Infusiones, jugo y agua + 2 bocados simples (Dulce y/o Salado).',
     basePrice: 5400,
     attendeesBase: 1,
-    bocadoSimpleCount: 2, // Solo bocados dulces
+    bocadoSimpleTotalCount: 2, // Total compartido entre dulces y salados
     hasNespressoOption: true,
   },
   {
     id: 'C3N',
     name: '3. Coffee Break + 2 Bocados Simples (con NESPRESSO)',
-    description: 'Nespresso, infusiones, jugo y agua + 2 bocados simples (Dulces).',
+    description: 'Nespresso, infusiones, jugo y agua + 2 bocados simples (Dulce y/o Salado).',
     basePrice: 6800,
     attendeesBase: 1,
-    bocadoSimpleCount: 2, // Solo bocados dulces
+    bocadoSimpleTotalCount: 2, // Total compartido entre dulces y salados
     isNespresso: true,
   },
   {
@@ -1107,6 +1107,8 @@ const App = () => {
                             title="Bocados Simples Dulces (Budines, Cuadraditos, Frutas, etc.)"
                             itemTypes={['bocadoSimple']}
                             maxTotalPerAttendee={selectedPackage.bocadoSimpleCount || 0}
+                            otherItemTypes={['bocadoSaladoSimple']}
+                            sharedMaxTotalPerAttendee={selectedPackage.bocadoSimpleTotalCount || 0}
                             formData={formData}
                             setFormData={setFormData}
                             attendees={formData.attendees}
@@ -1139,6 +1141,8 @@ const App = () => {
                             title="Bocados Salados Simples (Medialuna J/Q, Petit Pain, Sándwich de Miga)"
                             itemTypes={['bocadoSaladoSimple']}
                             maxTotalPerAttendee={selectedPackage.bocadoSaladoSimpleCount || 0}
+                            otherItemTypes={['bocadoSimple']}
+                            sharedMaxTotalPerAttendee={selectedPackage.bocadoSimpleTotalCount || 0}
                             formData={formData}
                             setFormData={setFormData}
                             attendees={formData.attendees}
