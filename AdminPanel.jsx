@@ -75,9 +75,15 @@ const AdminPanel = () => {
         const firebaseAddons = data.addons || [];
         const mergedAddons = [...firebaseAddons];
 
+        // Función para normalizar nombres (quita espacios extra y convierte a minúsculas)
+        const normalizeName = (name) => name.trim().toLowerCase().replace(/\s+/g, ' ');
+
         // Agregar addons que están en el código pero no en Firebase
         defaultAddons.forEach(defaultAddon => {
-          const exists = firebaseAddons.some(fbAddon => fbAddon.name === defaultAddon.name);
+          const normalizedDefaultName = normalizeName(defaultAddon.name);
+          const exists = firebaseAddons.some(fbAddon =>
+            normalizeName(fbAddon.name) === normalizedDefaultName
+          );
           if (!exists) {
             mergedAddons.push(defaultAddon);
             console.log(`✨ Nuevo adicional detectado: ${defaultAddon.name}`);
