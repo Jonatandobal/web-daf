@@ -147,6 +147,123 @@ const AdminPanel = () => {
     }
   };
 
+  // Función especial para corregir datos de Firebase
+  const fixFirebaseData = async () => {
+    if (!window.confirm('¿Estás seguro de que quieres corregir los datos de Firebase? Esto actualizará:\n\n1. Tipos de bocados (dulce/salado)\n2. Configuración de paquetes C4/C4N/C6N/C7N\n\n¿Continuar?')) {
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const docRef = doc(firestore, 'prices', appId);
+      const docSnap = await getDoc(docRef);
+
+      if (!docSnap.exists()) {
+        setMessage({ type: 'error', text: '❌ No hay datos en Firebase para corregir' });
+        return;
+      }
+
+      const data = docSnap.data();
+      const currentMenuItems = data.menuItems || [];
+      const currentPackages = data.packages || [];
+      const currentAddons = data.addons || [];
+
+      // 1. Corregir tipos de bocados especiales
+      const fixedMenuItems = currentMenuItems.map(item => {
+        const itemsToFix = [
+          'Chipacito de Queso',
+          'Scon de Queso',
+          'Sandwich de Miga Blanco',
+          'Sandwich de Miga Negro'
+        ];
+
+        if (itemsToFix.includes(item.name) && item.type === 'bocadoEspecialDulce') {
+          console.log(`✅ Corrigiendo tipo de "${item.name}": bocadoEspecialDulce → bocadoEspecialSalado`);
+          return { ...item, type: 'bocadoEspecialSalado' };
+        }
+        return item;
+      });
+
+      // 2. Corregir configuración de paquetes
+      const fixedPackages = currentPackages.map(pkg => {
+        // Corregir C4
+        if (pkg.id === 'C4') {
+          const fixed = { ...pkg };
+          if (fixed.bocadoEspecialTotalCount) {
+            delete fixed.bocadoEspecialTotalCount;
+            fixed.bocadoEspecialDulceCount = 2;
+            fixed.bocadoEspecialSaladoCount = 2;
+            fixed.name = '4. Coffee Break + 2 Bocados Especiales (Dulce o Salado)';
+            fixed.description = 'Infusiones, jugo y agua + 2 bocados especiales (Dulce o Salado).';
+            console.log('✅ Corrigiendo paquete C4');
+          }
+          return fixed;
+        }
+
+        // Corregir C4N
+        if (pkg.id === 'C4N') {
+          const fixed = { ...pkg };
+          if (fixed.bocadoEspecialTotalCount) {
+            delete fixed.bocadoEspecialTotalCount;
+            fixed.bocadoEspecialDulceCount = 2;
+            fixed.bocadoEspecialSaladoCount = 2;
+            fixed.name = '4. Coffee Break + 2 Bocados Especiales (con NESPRESSO)';
+            fixed.description = 'Nespresso, infusiones, jugo y agua + 2 bocados especiales (Dulce o Salado).';
+            console.log('✅ Corrigiendo paquete C4N');
+          }
+          return fixed;
+        }
+
+        // Corregir C6N
+        if (pkg.id === 'C6N') {
+          const fixed = { ...pkg };
+          if (fixed.bocadoEspecialTotalCount) {
+            delete fixed.bocadoEspecialTotalCount;
+            fixed.bocadoEspecialDulceCount = 4;
+            fixed.bocadoEspecialSaladoCount = 4;
+            fixed.name = '6. Coffee Break (NESPRESSO) + 4 Bocados Especiales (Dulce o Salado)';
+            fixed.description = 'Nespresso, infusiones, jugo y agua + 4 bocados especiales (Dulce o Salado).';
+            console.log('✅ Corrigiendo paquete C6N');
+          }
+          return fixed;
+        }
+
+        // Corregir C7N
+        if (pkg.id === 'C7N') {
+          const fixed = { ...pkg };
+          if (!fixed.bocadoSaladoSimpleCount) {
+            fixed.bocadoSaladoSimpleCount = 2;
+            fixed.description = 'Nespresso, infusiones, jugo y agua + 2 empanadas + 2 bocados (dulces y/o salados simples).';
+            console.log('✅ Corrigiendo paquete C7N - agregando bocadoSaladoSimpleCount');
+          }
+          return fixed;
+        }
+
+        return pkg;
+      });
+
+      // Guardar en Firebase
+      await setDoc(docRef, {
+        menuItems: fixedMenuItems,
+        packages: fixedPackages,
+        addons: currentAddons,
+        lastUpdated: new Date().toISOString()
+      });
+
+      // Actualizar estado local
+      setMenuItems(fixedMenuItems);
+      setPackages(fixedPackages);
+      setAddons(currentAddons);
+
+      setMessage({ type: 'success', text: '✅ Datos de Firebase corregidos exitosamente! Revisa la consola para ver los detalles.' });
+    } catch (error) {
+      console.error('Error corrigiendo datos:', error);
+      setMessage({ type: 'error', text: '❌ Error al corregir datos: ' + error.message });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleLogin = (e) => {
     e.preventDefault();
     if (password === ADMIN_PASSWORD) {
@@ -344,6 +461,20 @@ const AdminPanel = () => {
             >
               {saving ? 'Guardando...' : '💾 GUARDAR TODOS LOS CAMBIOS'}
             </button>
+          </div>
+
+          {/* Botón especial para corregir datos de Firebase */}
+          <div className="mt-3">
+            <button
+              onClick={fixFirebaseData}
+              disabled={saving}
+              className="w-full bg-orange-600 text-white py-2 px-4 rounded-lg hover:bg-orange-700 transition-colors font-medium disabled:opacity-50"
+            >
+              {saving ? 'Corrigiendo...' : '🔧 CORREGIR CATEGORÍAS DULCE/SALADO EN FIREBASE'}
+            </button>
+            <p className="text-xs text-gray-500 mt-2">
+              ⚠️ Usa este botón UNA VEZ para corregir los tipos de bocados y configuración de paquetes en Firebase.
+            </p>
           </div>
         </div>
 
@@ -660,11 +791,11 @@ const getDefaultPackages = () => [
   { id: 'C2N', name: '2. Coffee Break + 2 Facturas (con NESPRESSO)', description: 'Nespresso, infusiones, jugo y agua + 2 Facturas.', basePrice: 5800, attendeesBase: 1, bocadoFacturaCount: 2, isNespresso: true },
   { id: 'C3', name: '3. Coffee Break + 2 Bocados Simples (Mixto)', description: 'Infusiones, jugo y agua + 2 bocados simples (Dulce y/o Salado).', basePrice: 5400, attendeesBase: 1, bocadoSimpleTotalCount: 2, hasNespressoOption: true },
   { id: 'C3N', name: '3. Coffee Break + 2 Bocados Simples (con NESPRESSO)', description: 'Nespresso, infusiones, jugo y agua + 2 bocados simples (Dulce y/o Salado).', basePrice: 6800, attendeesBase: 1, bocadoSimpleTotalCount: 2, isNespresso: true },
-  { id: 'C4', name: '4. Coffee Break + 2 Bocados Especiales (Mixto)', description: 'Infusiones, jugo y agua + 2 bocados especiales (Dulce y/o Salado).', basePrice: 6000, attendeesBase: 1, bocadoEspecialTotalCount: 2, hasNespressoOption: true },
-  { id: 'C4N', name: '4. Coffee Break + 2 Bocados Especiales (con NESPRESSO)', description: 'Nespresso, infusiones, jugo y agua + 2 bocados especiales (Dulce y/o Salado).', basePrice: 7900, attendeesBase: 1, bocadoEspecialTotalCount: 2, isNespresso: true },
+  { id: 'C4', name: '4. Coffee Break + 2 Bocados Especiales (Dulce o Salado)', description: 'Infusiones, jugo y agua + 2 bocados especiales (Dulce o Salado).', basePrice: 6000, attendeesBase: 1, bocadoEspecialDulceCount: 2, bocadoEspecialSaladoCount: 2, hasNespressoOption: true },
+  { id: 'C4N', name: '4. Coffee Break + 2 Bocados Especiales (con NESPRESSO)', description: 'Nespresso, infusiones, jugo y agua + 2 bocados especiales (Dulce o Salado).', basePrice: 7900, attendeesBase: 1, bocadoEspecialDulceCount: 2, bocadoEspecialSaladoCount: 2, isNespresso: true },
   { id: 'C5', name: '5. Coffee Break + 2 Bocados Salados Especiales', description: 'Infusiones, jugo y agua + 2 bocados salados especiales.', basePrice: 6900, attendeesBase: 1, bocadoEspecialSaladoCount: 2, hasNespressoOption: true },
   { id: 'C5N', name: '5. Coffee Break + 2 Bocados Salados Especiales (con NESPRESSO)', description: 'Nespresso, infusiones, jugo y agua + 2 bocados salados especiales.', basePrice: 8700, attendeesBase: 1, bocadoEspecialSaladoCount: 2, isNespresso: true },
-  { id: 'C6N', name: '6. Coffee Break (NESPRESSO) + 4 Bocados Especiales (Mixto)', description: 'Nespresso, infusiones, jugo y agua + 4 bocados especiales (Dulce y/o Salado).', basePrice: 8700, attendeesBase: 1, bocadoEspecialTotalCount: 4, isNespresso: true },
+  { id: 'C6N', name: '6. Coffee Break (NESPRESSO) + 4 Bocados Especiales (Dulce o Salado)', description: 'Nespresso, infusiones, jugo y agua + 4 bocados especiales (Dulce o Salado).', basePrice: 8700, attendeesBase: 1, bocadoEspecialDulceCount: 4, bocadoEspecialSaladoCount: 4, isNespresso: true },
   { id: 'C7N', name: '7. Coffee Break (NESPRESSO) + 2 Empanadas + 2 Bocados', description: 'Nespresso, infusiones, jugo y agua + 2 empanadas + 2 bocados (dulces y/o salados simples).', basePrice: 10000, attendeesBase: 1, empanadaCount: 2, bocadoSimpleCount: 2, bocadoSaladoSimpleCount: 2, isNespresso: true },
   { id: 'C8S', name: '8. BIENVENIDA SIMPLE', description: '1 bocado dulce simple + 3 bocados salados simples + 1 bebida (agua, gaseosa light o común).', basePrice: 9100, attendeesBase: 1, bocadoSimpleCount: 1, bocadoSaladoSimpleCount: 3, bebidaSimpleCount: 1 },
   { id: 'C9F', name: '9. BIENVENIDA FULL', description: 'Infusiones, jugo y agua + 2 bocados dulces esp. + 1 shot dulce + 5 bocados salados esp. + 1 bebida (agua, gaseosa light o común).', basePrice: 19200, attendeesBase: 1, bocadoEspecialDulceCount: 2, shotDulceCount: 1, bocadoEspecialSaladoCount: 5, bebidaSimpleCount: 1, hasNespressoOption: true },
