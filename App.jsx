@@ -225,20 +225,22 @@ const getDefaultPackages = () => [
   },
   {
     id: 'C4',
-    name: '4. Coffee Break + 2 Bocados Especiales (Mixto)',
-    description: 'Infusiones, jugo y agua + 2 bocados especiales (Dulce y/o Salado).',
+    name: '4. Coffee Break + 2 Bocados Especiales (Dulce o Salado)',
+    description: 'Infusiones, jugo y agua + 2 bocados especiales (Dulce o Salado).',
     basePrice: 6000,
     attendeesBase: 1,
-    bocadoEspecialTotalCount: 2, // Total compartido entre dulces y salados
+    bocadoEspecialDulceCount: 2,
+    bocadoEspecialSaladoCount: 2,
     hasNespressoOption: true,
   },
   {
     id: 'C4N',
     name: '4. Coffee Break + 2 Bocados Especiales (con NESPRESSO)',
-    description: 'Nespresso, infusiones, jugo y agua + 2 bocados especiales (Dulce y/o Salado).',
+    description: 'Nespresso, infusiones, jugo y agua + 2 bocados especiales (Dulce o Salado).',
     basePrice: 7900,
     attendeesBase: 1,
-    bocadoEspecialTotalCount: 2, // Total compartido entre dulces y salados
+    bocadoEspecialDulceCount: 2,
+    bocadoEspecialSaladoCount: 2,
     isNespresso: true,
   },
   { 
@@ -259,13 +261,14 @@ const getDefaultPackages = () => [
     bocadoEspecialSaladoCount: 2,
     isNespresso: true,
   },
-  { 
-    id: 'C6N', 
-    name: '6. Coffee Break (NESPRESSO) + 4 Bocados Especiales (Mixto)', 
-    description: 'Nespresso, infusiones, jugo y agua + 4 bocados especiales (Dulce y/o Salado).', 
+  {
+    id: 'C6N',
+    name: '6. Coffee Break (NESPRESSO) + 4 Bocados Especiales (Dulce o Salado)',
+    description: 'Nespresso, infusiones, jugo y agua + 4 bocados especiales (Dulce o Salado).',
     basePrice: 8700,
     attendeesBase: 1,
-    bocadoEspecialTotalCount: 4, 
+    bocadoEspecialDulceCount: 4,
+    bocadoEspecialSaladoCount: 4,
     isNespresso: true,
   },
   {
