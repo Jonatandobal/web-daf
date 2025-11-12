@@ -208,19 +208,19 @@ const getDefaultPackages = () => [
   {
     id: 'C3',
     name: '3. Coffee Break + 2 Bocados Simples (Mixto)',
-    description: 'Infusiones, jugo y agua + 2 bocados simples (Dulce y/o Salado).',
+    description: 'Infusiones, jugo y agua + 2 bocados simples (Dulces).',
     basePrice: 5400,
     attendeesBase: 1,
-    bocadoSimpleTotalCount: 2, // Total compartido entre dulces y salados
+    bocadoSimpleCount: 2, // Solo bocados dulces
     hasNespressoOption: true,
   },
   {
     id: 'C3N',
     name: '3. Coffee Break + 2 Bocados Simples (con NESPRESSO)',
-    description: 'Nespresso, infusiones, jugo y agua + 2 bocados simples (Dulce y/o Salado).',
+    description: 'Nespresso, infusiones, jugo y agua + 2 bocados simples (Dulces).',
     basePrice: 6800,
     attendeesBase: 1,
-    bocadoSimpleTotalCount: 2, // Total compartido entre dulces y salados
+    bocadoSimpleCount: 2, // Solo bocados dulces
     isNespresso: true,
   },
   {
@@ -321,9 +321,9 @@ const getDefaultAddons = () => [
   { name: 'Agua Mineral Chica', price: 1560 },
   { name: 'Gaseosa (grande)', price: 4700 },
   { name: 'Jugo Cepita x Litro', price: 2600 },
-  { name: 'Bocaditos Salados (bandeja)', price: 2300 },
-  { name: 'Bocaditos Dulces (bandeja)', price: 700 },
-  { name: 'Frutas (bandeja)', price: 1400 },
+  { name: 'Bocaditos Salados', price: 2300 },
+  { name: 'Bocaditos Dulces', price: 700 },
+  { name: 'Frutas', price: 1400 },
   { name: 'Personal de Apoyo: Jornada 3 hs', price: 21800 },
   { name: 'Personal de Apoyo: Jornada 6 hs', price: 23900 },
   { name: 'Personal de Apoyo: Jornada 9 hs', price: 28100 },
@@ -1090,8 +1090,6 @@ const App = () => {
                             title="Bocados Simples Dulces (Budines, Cuadraditos, Frutas, etc.)"
                             itemTypes={['bocadoSimple']}
                             maxTotalPerAttendee={selectedPackage.bocadoSimpleCount || 0}
-                            otherItemTypes={['bocadoSaladoSimple']}
-                            sharedMaxTotalPerAttendee={selectedPackage.bocadoSimpleTotalCount || 0}
                             formData={formData}
                             setFormData={setFormData}
                             attendees={formData.attendees}
