@@ -208,19 +208,19 @@ const getDefaultPackages = () => [
   {
     id: 'C3',
     name: '3. Coffee Break + 2 Bocados Simples (Mixto)',
-    description: 'Infusiones, jugo y agua + 2 bocados simples (Dulce y/o Salado).',
+    description: 'Infusiones, jugo y agua + 2 bocados simples (Dulces).',
     basePrice: 5400,
     attendeesBase: 1,
-    bocadoSimpleTotalCount: 2, // Total compartido entre dulces y salados
+    bocadoSimpleCount: 2, // Solo bocados dulces
     hasNespressoOption: true,
   },
   {
     id: 'C3N',
     name: '3. Coffee Break + 2 Bocados Simples (con NESPRESSO)',
-    description: 'Nespresso, infusiones, jugo y agua + 2 bocados simples (Dulce y/o Salado).',
+    description: 'Nespresso, infusiones, jugo y agua + 2 bocados simples (Dulces).',
     basePrice: 6800,
     attendeesBase: 1,
-    bocadoSimpleTotalCount: 2, // Total compartido entre dulces y salados
+    bocadoSimpleCount: 2, // Solo bocados dulces
     isNespresso: true,
   },
   {
@@ -1090,8 +1090,6 @@ const App = () => {
                             title="Bocados Simples Dulces (Budines, Cuadraditos, Frutas, etc.)"
                             itemTypes={['bocadoSimple']}
                             maxTotalPerAttendee={selectedPackage.bocadoSimpleCount || 0}
-                            otherItemTypes={['bocadoSaladoSimple']}
-                            sharedMaxTotalPerAttendee={selectedPackage.bocadoSimpleTotalCount || 0}
                             formData={formData}
                             setFormData={setFormData}
                             attendees={formData.attendees}
