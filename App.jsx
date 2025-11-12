@@ -268,14 +268,15 @@ const getDefaultPackages = () => [
     bocadoEspecialTotalCount: 4, 
     isNespresso: true,
   },
-  { 
-    id: 'C7N', 
-    name: '7. Coffee Break (NESPRESSO) + 2 Empanadas + 2 Bocados Simples', 
-    description: 'Nespresso, infusiones, jugo y agua + 2 empanadas + 2 bocados simples.', 
+  {
+    id: 'C7N',
+    name: '7. Coffee Break (NESPRESSO) + 2 Empanadas + 2 Bocados',
+    description: 'Nespresso, infusiones, jugo y agua + 2 empanadas + 2 bocados (dulces y/o salados simples).',
     basePrice: 10000,
     attendeesBase: 1,
-    empanadaCount: 2, 
+    empanadaCount: 2,
     bocadoSimpleCount: 2,
+    bocadoSaladoSimpleCount: 2,
     isNespresso: true,
   },
   {
@@ -1087,6 +1088,16 @@ const App = () => {
                         />
 
                         <BocadoSelector
+                            title="Empanadas"
+                            itemTypes={['empanada']}
+                            maxTotalPerAttendee={selectedPackage.empanadaCount || 0}
+                            formData={formData}
+                            setFormData={setFormData}
+                            attendees={formData.attendees}
+                            menuItems={menuItems}
+                        />
+
+                        <BocadoSelector
                             title="Bocados Simples Dulces (Budines, Cuadraditos, Frutas, etc.)"
                             itemTypes={['bocadoSimple']}
                             maxTotalPerAttendee={selectedPackage.bocadoSimpleCount || 0}
@@ -1122,8 +1133,6 @@ const App = () => {
                             title="Bocados Salados Simples (Medialuna J/Q, Petit Pain, Sándwich de Miga)"
                             itemTypes={['bocadoSaladoSimple']}
                             maxTotalPerAttendee={selectedPackage.bocadoSaladoSimpleCount || 0}
-                            otherItemTypes={['bocadoSimple']}
-                            sharedMaxTotalPerAttendee={selectedPackage.bocadoSimpleTotalCount || 0}
                             formData={formData}
                             setFormData={setFormData}
                             attendees={formData.attendees}
@@ -1136,16 +1145,6 @@ const App = () => {
                             maxTotalPerAttendee={selectedPackage.bocadoEspecialSaladoCount || 0}
                             otherItemTypes={['bocadoEspecialDulce']}
                             sharedMaxTotalPerAttendee={selectedPackage.bocadoEspecialTotalCount || 0}
-                            formData={formData}
-                            setFormData={setFormData}
-                            attendees={formData.attendees}
-                            menuItems={menuItems}
-                        />
-
-                        <BocadoSelector
-                            title="Empanadas"
-                            itemTypes={['empanada']}
-                            maxTotalPerAttendee={selectedPackage.empanadaCount || 0}
                             formData={formData}
                             setFormData={setFormData}
                             attendees={formData.attendees}
