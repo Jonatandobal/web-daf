@@ -70,24 +70,32 @@ const AdminPanel = () => {
           }
         });
 
-        // Merge addons: mantener precios de Firebase pero agregar nuevos del código
+        // Merge addons: mantener orden del código pero usar precios de Firebase
         const defaultAddons = getDefaultAddons();
         const firebaseAddons = data.addons || [];
-        const mergedAddons = [...firebaseAddons];
 
         // Función para normalizar nombres (quita espacios extra y convierte a minúsculas)
         const normalizeName = (name) => name.trim().toLowerCase().replace(/\s+/g, ' ');
 
-        // Agregar addons que están en el código pero no en Firebase
-        defaultAddons.forEach(defaultAddon => {
-          const normalizedDefaultName = normalizeName(defaultAddon.name);
-          const exists = firebaseAddons.some(fbAddon =>
-            normalizeName(fbAddon.name) === normalizedDefaultName
-          );
-          if (!exists) {
-            mergedAddons.push(defaultAddon);
+        // Crear un Map de Firebase por nombre normalizado para acceso rápido
+        const firebaseMap = new Map();
+        firebaseAddons.forEach(fbAddon => {
+          firebaseMap.set(normalizeName(fbAddon.name), fbAddon);
+        });
+
+        // Mantener orden del código, usar precio de Firebase si existe
+        const mergedAddons = defaultAddons.map(defaultAddon => {
+          const normalizedName = normalizeName(defaultAddon.name);
+          const firebaseAddon = firebaseMap.get(normalizedName);
+
+          if (firebaseAddon) {
+            // Existe en Firebase: usar precio de Firebase
+            return { ...defaultAddon, price: firebaseAddon.price };
+          } else {
+            // No existe en Firebase: usar valores por defecto
             console.log(`✨ Nuevo adicional detectado: ${defaultAddon.name}`);
             hasChanges = true;
+            return defaultAddon;
           }
         });
 
@@ -142,123 +150,6 @@ const AdminPanel = () => {
     } catch (error) {
       console.error('Error guardando precios:', error);
       setMessage({ type: 'error', text: '❌ Error al guardar precios: ' + error.message });
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  // Función especial para corregir datos de Firebase
-  const fixFirebaseData = async () => {
-    if (!window.confirm('¿Estás seguro de que quieres corregir los datos de Firebase? Esto actualizará:\n\n1. Tipos de bocados (dulce/salado)\n2. Configuración de paquetes C4/C4N/C6N/C7N\n\n¿Continuar?')) {
-      return;
-    }
-
-    setSaving(true);
-    try {
-      const docRef = doc(firestore, 'prices', appId);
-      const docSnap = await getDoc(docRef);
-
-      if (!docSnap.exists()) {
-        setMessage({ type: 'error', text: '❌ No hay datos en Firebase para corregir' });
-        return;
-      }
-
-      const data = docSnap.data();
-      const currentMenuItems = data.menuItems || [];
-      const currentPackages = data.packages || [];
-      const currentAddons = data.addons || [];
-
-      // 1. Corregir tipos de bocados especiales
-      const fixedMenuItems = currentMenuItems.map(item => {
-        const itemsToFix = [
-          'Chipacito de Queso',
-          'Scon de Queso',
-          'Sandwich de Miga Blanco',
-          'Sandwich de Miga Negro'
-        ];
-
-        if (itemsToFix.includes(item.name) && item.type === 'bocadoEspecialDulce') {
-          console.log(`✅ Corrigiendo tipo de "${item.name}": bocadoEspecialDulce → bocadoEspecialSalado`);
-          return { ...item, type: 'bocadoEspecialSalado' };
-        }
-        return item;
-      });
-
-      // 2. Corregir configuración de paquetes
-      const fixedPackages = currentPackages.map(pkg => {
-        // Corregir C4
-        if (pkg.id === 'C4') {
-          const fixed = { ...pkg };
-          if (fixed.bocadoEspecialTotalCount) {
-            delete fixed.bocadoEspecialTotalCount;
-            fixed.bocadoEspecialDulceCount = 2;
-            fixed.bocadoEspecialSaladoCount = 2;
-            fixed.name = '4. Coffee Break + 2 Bocados Especiales (Dulce o Salado)';
-            fixed.description = 'Infusiones, jugo y agua + 2 bocados especiales (Dulce o Salado).';
-            console.log('✅ Corrigiendo paquete C4');
-          }
-          return fixed;
-        }
-
-        // Corregir C4N
-        if (pkg.id === 'C4N') {
-          const fixed = { ...pkg };
-          if (fixed.bocadoEspecialTotalCount) {
-            delete fixed.bocadoEspecialTotalCount;
-            fixed.bocadoEspecialDulceCount = 2;
-            fixed.bocadoEspecialSaladoCount = 2;
-            fixed.name = '4. Coffee Break + 2 Bocados Especiales (con NESPRESSO)';
-            fixed.description = 'Nespresso, infusiones, jugo y agua + 2 bocados especiales (Dulce o Salado).';
-            console.log('✅ Corrigiendo paquete C4N');
-          }
-          return fixed;
-        }
-
-        // Corregir C6N
-        if (pkg.id === 'C6N') {
-          const fixed = { ...pkg };
-          if (fixed.bocadoEspecialTotalCount) {
-            delete fixed.bocadoEspecialTotalCount;
-            fixed.bocadoEspecialDulceCount = 4;
-            fixed.bocadoEspecialSaladoCount = 4;
-            fixed.name = '6. Coffee Break (NESPRESSO) + 4 Bocados Especiales (Dulce o Salado)';
-            fixed.description = 'Nespresso, infusiones, jugo y agua + 4 bocados especiales (Dulce o Salado).';
-            console.log('✅ Corrigiendo paquete C6N');
-          }
-          return fixed;
-        }
-
-        // Corregir C7N
-        if (pkg.id === 'C7N') {
-          const fixed = { ...pkg };
-          if (!fixed.bocadoSaladoSimpleCount) {
-            fixed.bocadoSaladoSimpleCount = 2;
-            fixed.description = 'Nespresso, infusiones, jugo y agua + 2 empanadas + 2 bocados (dulces y/o salados simples).';
-            console.log('✅ Corrigiendo paquete C7N - agregando bocadoSaladoSimpleCount');
-          }
-          return fixed;
-        }
-
-        return pkg;
-      });
-
-      // Guardar en Firebase
-      await setDoc(docRef, {
-        menuItems: fixedMenuItems,
-        packages: fixedPackages,
-        addons: currentAddons,
-        lastUpdated: new Date().toISOString()
-      });
-
-      // Actualizar estado local
-      setMenuItems(fixedMenuItems);
-      setPackages(fixedPackages);
-      setAddons(currentAddons);
-
-      setMessage({ type: 'success', text: '✅ Datos de Firebase corregidos exitosamente! Revisa la consola para ver los detalles.' });
-    } catch (error) {
-      console.error('Error corrigiendo datos:', error);
-      setMessage({ type: 'error', text: '❌ Error al corregir datos: ' + error.message });
     } finally {
       setSaving(false);
     }
@@ -461,20 +352,6 @@ const AdminPanel = () => {
             >
               {saving ? 'Guardando...' : '💾 GUARDAR TODOS LOS CAMBIOS'}
             </button>
-          </div>
-
-          {/* Botón especial para corregir datos de Firebase */}
-          <div className="mt-3">
-            <button
-              onClick={fixFirebaseData}
-              disabled={saving}
-              className="w-full bg-orange-600 text-white py-2 px-4 rounded-lg hover:bg-orange-700 transition-colors font-medium disabled:opacity-50"
-            >
-              {saving ? 'Corrigiendo...' : '🔧 CORREGIR CATEGORÍAS DULCE/SALADO EN FIREBASE'}
-            </button>
-            <p className="text-xs text-gray-500 mt-2">
-              ⚠️ Usa este botón UNA VEZ para corregir los tipos de bocados y configuración de paquetes en Firebase.
-            </p>
           </div>
         </div>
 

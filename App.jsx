@@ -621,24 +621,32 @@ const App = () => {
             setPackages(getDefaultPackages());
           }
 
-          // Merge addons: mantener precios de Firebase pero agregar nuevos del código
+          // Merge addons: mantener orden del código pero usar precios de Firebase
           if (data.addons) {
             const defaultAddons = getDefaultAddons();
             const firebaseAddons = data.addons;
-            const mergedAddons = [...firebaseAddons];
 
             // Función para normalizar nombres (quita espacios extra y convierte a minúsculas)
             const normalizeName = (name) => name.trim().toLowerCase().replace(/\s+/g, ' ');
 
-            // Agregar addons que están en el código pero no en Firebase
-            defaultAddons.forEach(defaultAddon => {
-              const normalizedDefaultName = normalizeName(defaultAddon.name);
-              const exists = firebaseAddons.some(fbAddon =>
-                normalizeName(fbAddon.name) === normalizedDefaultName
-              );
-              if (!exists) {
-                mergedAddons.push(defaultAddon);
+            // Crear un Map de Firebase por nombre normalizado para acceso rápido
+            const firebaseMap = new Map();
+            firebaseAddons.forEach(fbAddon => {
+              firebaseMap.set(normalizeName(fbAddon.name), fbAddon);
+            });
+
+            // Mantener orden del código, usar precio de Firebase si existe
+            const mergedAddons = defaultAddons.map(defaultAddon => {
+              const normalizedName = normalizeName(defaultAddon.name);
+              const firebaseAddon = firebaseMap.get(normalizedName);
+
+              if (firebaseAddon) {
+                // Existe en Firebase: usar precio de Firebase
+                return { ...defaultAddon, price: firebaseAddon.price };
+              } else {
+                // No existe en Firebase: usar valores por defecto
                 console.log(`✨ Nuevo adicional detectado: ${defaultAddon.name}`);
+                return defaultAddon;
               }
             });
 
