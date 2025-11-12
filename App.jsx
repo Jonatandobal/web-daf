@@ -110,10 +110,6 @@ const getDefaultMenuItems = () => [
     { type: 'bocadoEspecialDulce', name: 'Cookie de Chocolate', price: 200 },
     { type: 'bocadoEspecialDulce', name: 'Cookie Red Velvet', price: 200 },
     { type: 'bocadoEspecialDulce', name: 'Cookie Vegana', price: 200 },
-    { type: 'bocadoEspecialDulce', name: 'Chipacito de Queso', price: 200 },
-    { type: 'bocadoEspecialDulce', name: 'Scon de Queso', price: 200 },
-    { type: 'bocadoEspecialDulce', name: 'Sandwich de Miga Blanco', price: 200 },
-    { type: 'bocadoEspecialDulce', name: 'Sandwich de Miga Negro', price: 200 },
     { type: 'bocadoEspecialDulce', name: 'Alfajorcito de Maicena', price: 180 },
     { type: 'bocadoEspecialDulce', name: 'Alfajorcito Sablé', price: 180 },
     { type: 'bocadoEspecialDulce', name: 'Alfajorcito de Chocolate', price: 180 },
@@ -124,6 +120,10 @@ const getDefaultMenuItems = () => [
     { type: 'bocadoEspecialDulce', name: 'Barrita de Cereal', price: 250 },
 
     // ===== CATEGORÍA BOCADOS ESPECIALES SALADOS (Usada en Combo 5, 9) =====
+    { type: 'bocadoEspecialSalado', name: 'Chipacito de Queso', price: 200 },
+    { type: 'bocadoEspecialSalado', name: 'Scon de Queso', price: 200 },
+    { type: 'bocadoEspecialSalado', name: 'Sandwich de Miga Blanco', price: 200 },
+    { type: 'bocadoEspecialSalado', name: 'Sandwich de Miga Negro', price: 200 },
     { type: 'bocadoEspecialSalado', name: 'Mini Wrap de Jamón y Queso', price: 280 },
     { type: 'bocadoEspecialSalado', name: 'Mini Wrap de Pollo', price: 280 },
     { type: 'bocadoEspecialSalado', name: 'Mini Wrap de Carne', price: 280 },
