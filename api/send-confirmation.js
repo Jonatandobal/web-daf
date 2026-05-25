@@ -63,24 +63,19 @@ async function saveToAirtable(order) {
         .join('; ') + `; Precio total: $${order.totalPrice?.toLocaleString('es-AR')}`
     : `Precio total: $${order.totalPrice?.toLocaleString('es-AR')}`;
 
-  // Convertir fecha al formato que usa Airtable (D/M/YYYY H:MMam/pm)
-  const [datePart, timePart] = order.eventDate.split('T')[0].split('-');
-  const eventDateFormatted = `${parseInt(order.eventDate.split('-')[2])}/${parseInt(order.eventDate.split('-')[1])}/${order.eventDate.split('-')[0]} ${formatTime12h(order.eventTime)}`;
-
   const fields = {
     'Tipo de servicio': order.packageName,
     'Event ID': order.orderId || `EVT-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
     'Nombre': order.name || 'N/A',
     'Ubicacion': order.eventLocation || 'N/A',
     'Email': order.email,
-    'Fecha calendario': eventDateFormatted,
+    'Fecha': order.eventDate,
     'Hora': order.eventTime,
     'PAX': order.attendees,
     'Descripcion de servicio': descripcion,
     'Adicional': adicionalText,
     'Estado del evento': 'Pendiente',
     'Observaciones': order.observations || '',
-    'Fecha de inicio': new Date().toLocaleDateString('es-AR'),
   };
 
   const response = await fetch(
