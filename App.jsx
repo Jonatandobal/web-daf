@@ -8,7 +8,7 @@ import AdminPanel from './AdminPanel.jsx';
 
 // --- CONFIGURACIÓN DE DATA ---
 
-const N8N_WEBHOOK_URL = import.meta.env.VITE_N8N_WEBHOOK_URL || '';
+const CONFIRMATION_API_URL = '/api/send-confirmation';
 
 // Función para obtener la fecha mínima (48 horas desde hoy)
 const getMinDate = () => {
@@ -858,22 +858,20 @@ const App = () => {
       
       orderData.orderId = docRef.id;
 
-      if (N8N_WEBHOOK_URL) {
-          try {
-              const webhookResponse = await fetch(N8N_WEBHOOK_URL, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify(orderData)
-              });
-              
-              if (!webhookResponse.ok) {
-                  console.error('Error enviando datos al webhook:', webhookResponse.statusText);
-              } else {
-                  console.log('Datos enviados a webhook con éxito.');
-              }
-          } catch (webhookError) {
-              console.error('Fallo al conectar con el webhook:', webhookError);
+      try {
+          const confirmationResponse = await fetch(CONFIRMATION_API_URL, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(orderData)
+          });
+
+          if (!confirmationResponse.ok) {
+              console.error('Error enviando confirmación:', confirmationResponse.statusText);
+          } else {
+              console.log('Confirmación enviada con éxito.');
           }
+      } catch (confirmationError) {
+          console.error('Fallo al enviar confirmación:', confirmationError);
       }
 
       setFormData(prev => ({
