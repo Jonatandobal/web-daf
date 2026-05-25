@@ -93,7 +93,7 @@ async function getAirtableRecords() {
 
   do {
     const url = new URL(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${encodeURIComponent(AIRTABLE_TABLE_NAME)}`);
-    url.searchParams.set('filterByFormula', `AND({Estado del evento} != "Cancelado", {Recordatorio 24hr} = "")`);
+    url.searchParams.set('filterByFormula', `AND({Estado del evento} != "Cancelado", NOT({Recordatorio 24hr}))`);
     if (offset) url.searchParams.set('offset', offset);
 
     const response = await fetch(url.toString(), {
@@ -124,7 +124,8 @@ async function markReminderSent(recordId) {
       },
       body: JSON.stringify({
         fields: {
-          'Recordatorio 24hr': new Date().toISOString(),
+          'Recordatorio 24hr': true,
+          'Estado del evento': 'Confirmado',
         },
       }),
     }
