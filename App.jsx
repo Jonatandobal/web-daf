@@ -591,8 +591,8 @@ const App = () => {
             const mergedPackages = firebasePackages.map(fbPkg => {
               const defaultPkg = defaultPackages.find(dp => dp.id === fbPkg.id);
               if (defaultPkg) {
-                // Mantener precio de código temporalmente, ignorando Firebase
-                return { ...defaultPkg, basePrice: defaultPkg.basePrice };
+                // Usar precio de Firebase pero mantener propiedades del código
+                return { ...defaultPkg, basePrice: fbPkg.basePrice };
               }
               return fbPkg;
             });
@@ -631,8 +631,8 @@ const App = () => {
               const firebaseAddon = firebaseMap.get(normalizedName);
 
               if (firebaseAddon) {
-                // Forzar precio del código temporalmente (ignorar Firebase)
-                return { ...defaultAddon, price: defaultAddon.price };
+                // Usar precio de Firebase
+                return { ...defaultAddon, price: firebaseAddon.price };
               } else {
                 // No existe en Firebase: usar valores por defecto
                 console.log(`✨ Nuevo adicional detectado: ${defaultAddon.name}`);
