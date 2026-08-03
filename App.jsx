@@ -5,6 +5,7 @@ import { auth, db as firestore, appId } from './firebase.js';
 import LoginPage from './LoginPage.jsx';
 import RegisterPage from './RegisterPage.jsx';
 import AdminPanel from './AdminPanel.jsx';
+import { MENU_ITEMS, resolvePrices } from './catalog.js';
 
 // --- CONFIGURACIÓN DE DATA ---
 
@@ -16,312 +17,6 @@ const getMinDate = () => {
   const minDate = new Date(today.getTime() + 48 * 60 * 60 * 1000);
   return minDate.toISOString().split('T')[0];
 };
-
-// ========== MENÚ DE BOCADOS ACTUALIZADO - OCTUBRE 2025 ==========
-// Valores por defecto - se pueden sobrescribir con precios desde Firebase
-const getDefaultMenuItems = () => [
-    // ===== CATEGORÍA FACTURAS (Usada en Combo 2) =====
-    { type: 'bocadoFactura', name: 'Medialuna de Manteca 🆕', price: 100 },
-    { type: 'bocadoFactura', name: 'Medialuna de Grasa 🆕', price: 100 },
-    { type: 'bocadoFactura', name: 'Librito', price: 100 },
-    { type: 'bocadoFactura', name: 'Churrinche', price: 100 },
-    { type: 'bocadoFactura', name: 'Sacramento 🆕', price: 100 },
-
-    // ===== CATEGORÍA BOCADOS SIMPLES (Usada en Combo 3, 7, 8) =====
-    // Estos son los "Simples DULCES" para el Combo 8
-    { type: 'bocadoSimple', name: 'Medialuna de Manteca', price: 120 },
-    { type: 'bocadoSimple', name: 'Medialuna de Grasa', price: 120 },
-    { type: 'bocadoSimple', name: 'Librito', price: 120 },
-    { type: 'bocadoSimple', name: 'Churrinche', price: 120 },
-    { type: 'bocadoSimple', name: 'Sacramento 🆕', price: 120 },
-    { type: 'bocadoSimple', name: 'Madeleine Bañada en Chocolate 🆕', price: 120 },
-    { type: 'bocadoSimple', name: 'Rosquita de Frutilla/Arándano 🆕', price: 120 },
-    { type: 'bocadoSimple', name: 'Cake de Manzana 🆕', price: 120 },
-    { type: 'bocadoSimple', name: 'Mini Budín de Limón y Amapola con Glace 🆕', price: 120 },
-    { type: 'bocadoSimple', name: 'Mini Budín de Choco con Naranja 🆕', price: 120 },
-    { type: 'bocadoSimple', name: 'Mini Budín Choco Bañado en Choco 🆕', price: 120 },
-    { type: 'bocadoSimple', name: 'Pepa de Membrillo 🆕', price: 120 },
-    { type: 'bocadoSimple', name: 'Budín Marmolado', price: 120 },
-    { type: 'bocadoSimple', name: 'Budín Banana y Nuez', price: 120 },
-    { type: 'bocadoSimple', name: 'Budín Limón y Amapola', price: 120 },
-    { type: 'bocadoSimple', name: 'Cuadradito Brownie', price: 120 },
-    { type: 'bocadoSimple', name: 'Cuadradito Pasta Frola', price: 120 },
-    { type: 'bocadoSimple', name: 'Cuadradito Coco y Dulce de Leche', price: 120 },
-    { type: 'bocadoSimple', name: 'Cookie Red Velvet', price: 120 },
-    { type: 'bocadoSimple', name: 'Cookie Choco', price: 120 },
-    { type: 'bocadoSimple', name: 'Cookie Chips Choco', price: 120 },
-    { type: 'bocadoSimple', name: 'Cookie Vegana', price: 120 },
-    { type: 'bocadoSimple', name: 'Cookie Chocolate (Sin TACC) 🌾', price: 120 },
-    { type: 'bocadoSimple', name: 'Cookie de Vainilla (Sin TACC) 🌾', price: 120 },
-    { type: 'bocadoSimple', name: 'Cuadradito de Pasta Frola (Sin TACC) 🌾', price: 120 },
-    { type: 'bocadoSimple', name: 'Alfajorcito Sable', price: 120 },
-    { type: 'bocadoSimple', name: 'Alfajorcito Choco', price: 120 },
-    { type: 'bocadoSimple', name: 'Alfajorcito Maicena', price: 120 },
-    { type: 'bocadoSimple', name: 'Shot de Ensalada de Frutas', price: 150 },
-    { type: 'bocadoSimple', name: 'Shot de Yogurt con Granola', price: 150 },
-    { type: 'bocadoSimple', name: 'Pinchos de Frutas 🆕', price: 150 },
-    { type: 'bocadoSimple', name: 'Fruta de Estación', price: 150 },
-    { type: 'bocadoSimple', name: 'Barrita de Cereal', price: 150 },
-    
-    // ===== CATEGORÍA BOCADOS SALADOS SIMPLES (Usada en Combo 3 y 8) =====
-    { type: 'bocadoSaladoSimple', name: 'Medialuna con Jamón y Queso', price: 180 },
-    { type: 'bocadoSaladoSimple', name: 'Chipacito de Queso', price: 180 },
-    { type: 'bocadoSaladoSimple', name: 'Scon de Queso', price: 180 },
-    { type: 'bocadoSaladoSimple', name: 'Sandwich de Miga Blanco', price: 180 },
-    { type: 'bocadoSaladoSimple', name: 'Sandwich de Miga Negro', price: 180 },
-    { type: 'bocadoSaladoSimple', name: 'Petit Pains Jamón y Queso', price: 180 },
-    { type: 'bocadoSaladoSimple', name: 'Petit Pain Lomito y Queso Danbo 🆕', price: 180 },
-    { type: 'bocadoSaladoSimple', name: 'Petit Pain Bondiola y Queso 🆕', price: 180 },
-    { type: 'bocadoSaladoSimple', name: 'Petit Pain Tomate y Queso 🆕', price: 180 },
-    { type: 'bocadoSaladoSimple', name: 'Petit Pain Lechuga y Queso 🆕', price: 180 },
-    { type: 'bocadoSaladoSimple', name: 'Petit Pain Queso y Aceituna 🆕', price: 180 },
-    { type: 'bocadoSaladoSimple', name: 'Petit Pain Tomate Cherry, Mozzarella y Albahaca 🆕', price: 180 },
-    { type: 'bocadoSaladoSimple', name: 'Pinchos de Tomate Cherry + Jamón + Queso + Aceituna 🆕', price: 180 },
-    { type: 'bocadoSaladoSimple', name: 'Pinchos de Tomate Cherry + Mozzarella + Albahaca 🆕', price: 180 },
-    { type: 'bocadoSaladoSimple', name: 'Roll de Jamón y Queso (Sin TACC) 🌾', price: 180 },
-    { type: 'bocadoSaladoSimple', name: 'Roll de Jamón y Queso 🆕', price: 180 },
-
-    // ===== CATEGORÍA BOCADOS ESPECIALES DULCES (Usada en Combo 4, 6, 9) =====
-    { type: 'bocadoEspecialDulce', name: 'Medialuna de Manteca', price: 200 },
-    { type: 'bocadoEspecialDulce', name: 'Medialuna de Grasa', price: 200 },
-    { type: 'bocadoEspecialDulce', name: 'Librito', price: 200 },
-    { type: 'bocadoEspecialDulce', name: 'Churrinche', price: 200 },
-    { type: 'bocadoEspecialDulce', name: 'Sacramento 🆕', price: 200 },
-    { type: 'bocadoEspecialDulce', name: 'Madeleine Bañada 🆕', price: 200 },
-    { type: 'bocadoEspecialDulce', name: 'Rosquita Rellena de Frutilla/Arándano 🆕', price: 200 },
-    { type: 'bocadoEspecialDulce', name: 'Cake de Manzana 🆕', price: 200 },
-    { type: 'bocadoEspecialDulce', name: 'Mini Budín de Limón y Amapola con Glace 🆕', price: 200 },
-    { type: 'bocadoEspecialDulce', name: 'Mini Budín de Choco con Naranja 🆕', price: 200 },
-    { type: 'bocadoEspecialDulce', name: 'Mini Budín Choco Bañado en Choco 🆕', price: 200 },
-    { type: 'bocadoEspecialDulce', name: 'Pepa de Membrillo 🆕', price: 200 },
-    { type: 'bocadoEspecialDulce', name: 'Budín Marmolado', price: 200 },
-    { type: 'bocadoEspecialDulce', name: 'Budín Banana y Nuez', price: 200 },
-    { type: 'bocadoEspecialDulce', name: 'Budín Limón y Amapola', price: 200 },
-    { type: 'bocadoEspecialDulce', name: 'Cuadradito de Brownie', price: 200 },
-    { type: 'bocadoEspecialDulce', name: 'Cuadradito de Pasta Frola', price: 200 },
-    { type: 'bocadoEspecialDulce', name: 'Cuadradito de Coco y Dulce de Leche', price: 200 },
-    { type: 'bocadoEspecialDulce', name: 'Cookie de Chip de Chocolate', price: 200 },
-    { type: 'bocadoEspecialDulce', name: 'Cookie de Chocolate', price: 200 },
-    { type: 'bocadoEspecialDulce', name: 'Cookie Red Velvet', price: 200 },
-    { type: 'bocadoEspecialDulce', name: 'Cookie Vegana', price: 200 },
-    { type: 'bocadoEspecialDulce', name: 'Alfajorcito de Maicena', price: 180 },
-    { type: 'bocadoEspecialDulce', name: 'Alfajorcito Sablé', price: 180 },
-    { type: 'bocadoEspecialDulce', name: 'Alfajorcito de Chocolate', price: 180 },
-    { type: 'bocadoEspecialDulce', name: 'Shot de Ensalada de Frutas', price: 250 },
-    { type: 'bocadoEspecialDulce', name: 'Shot de Yogurt con Granola', price: 250 },
-    { type: 'bocadoEspecialDulce', name: 'Pinchos de Frutas 🆕', price: 250 },
-    { type: 'bocadoEspecialDulce', name: 'Fruta de Estación', price: 250 },
-    { type: 'bocadoEspecialDulce', name: 'Barrita de Cereal', price: 250 },
-
-    // ===== CATEGORÍA BOCADOS ESPECIALES SALADOS (Usada en Combo 5, 9) =====
-    { type: 'bocadoEspecialSalado', name: 'Chipacito de Queso', price: 200 },
-    { type: 'bocadoEspecialSalado', name: 'Scon de Queso', price: 200 },
-    { type: 'bocadoEspecialSalado', name: 'Sandwich de Miga Blanco', price: 200 },
-    { type: 'bocadoEspecialSalado', name: 'Sandwich de Miga Negro', price: 200 },
-    { type: 'bocadoEspecialSalado', name: 'Mini Wrap de Jamón y Queso', price: 280 },
-    { type: 'bocadoEspecialSalado', name: 'Mini Wrap de Pollo', price: 280 },
-    { type: 'bocadoEspecialSalado', name: 'Mini Wrap de Carne', price: 280 },
-    { type: 'bocadoEspecialSalado', name: 'Mini Wrap Vegetariano', price: 280 },
-    { type: 'bocadoEspecialSalado', name: 'Triángulos de Queso con Semillas de Sésamo 🆕', price: 300 },
-    { type: 'bocadoEspecialSalado', name: 'Pizzeta Tomate y Mozzarella (Sin TACC) 🌾', price: 350 },
-    { type: 'bocadoEspecialSalado', name: 'Medialuna de Jamón y Queso', price: 280 },
-    { type: 'bocadoEspecialSalado', name: 'Petit Pains de Jamón y Queso', price: 280 },
-    { type: 'bocadoEspecialSalado', name: 'Petit Pain Lomito y Queso Danbo', price: 280 },
-    { type: 'bocadoEspecialSalado', name: 'Petit Pain Bondiola y Queso', price: 280 },
-    { type: 'bocadoEspecialSalado', name: 'Petit Pain Tomate y Queso', price: 280 },
-    { type: 'bocadoEspecialSalado', name: 'Petit Pain Lechuga y Queso', price: 280 },
-    { type: 'bocadoEspecialSalado', name: 'Petit Pain Queso y Aceituna', price: 280 },
-    { type: 'bocadoEspecialSalado', name: 'Petit Pain Tomate Cherry, Mozzarella y Albahaca', price: 280 },
-    { type: 'bocadoEspecialSalado', name: 'Sandwich de Miga Jamón Crudo y Queso 🆕', price: 280 },
-    { type: 'bocadoEspecialSalado', name: 'Sandwich de Miga Queso y Aceituna 🆕', price: 280 },
-    { type: 'bocadoEspecialSalado', name: 'Sandwich de Miga Huevo y Queso 🆕', price: 280 },
-    { type: 'bocadoEspecialSalado', name: 'Sandwich de Miga Jamón y Lechuga 🆕', price: 280 },
-    { type: 'bocadoEspecialSalado', name: 'Roll de Jamón y Queso (Sin TACC) 🌾🆕', price: 280 },
-    { type: 'bocadoEspecialSalado', name: 'Sandwich de Chipa de Jamón y Queso (Sin TACC) 🌾🆕', price: 280 },
-    { type: 'bocadoEspecialSalado', name: 'Sandwich de Miga Jamón y Tomate 🆕', price: 280 },
-    { type: 'bocadoEspecialSalado', name: 'Sandwich de Miga Queso y Tomate 🆕', price: 280 },
-    { type: 'bocadoEspecialSalado', name: 'Sandwich de Miga Queso y Roquefort 🆕', price: 280 },
-    { type: 'bocadoEspecialSalado', name: 'Sandwich de Miga Queso y Lechuga 🆕', price: 280 },
-    { type: 'bocadoEspecialSalado', name: 'Sacramento de Jamón y Queso 🆕', price: 280 },
-    { type: 'bocadoEspecialSalado', name: 'Pinchos de Tomate Cherry + Jamón + Queso + Aceituna 🆕', price: 280 },
-    { type: 'bocadoEspecialSalado', name: 'Pinchos de Tomate Cherry + Mozzarella + Albahaca 🆕', price: 280 },
-
-    // ===== CATEGORÍA EMPANADAS (NUEVA, Usada en Combo 7) =====
-    { type: 'empanada', name: 'Empanada de Carne', price: 300 },
-    { type: 'empanada', name: 'Empanada de Pollo', price: 300 },
-    { type: 'empanada', name: 'Empanada de Jamón y Queso', price: 300 },
-    { type: 'empanada', name: 'Empanada de Verdura', price: 300 },
-
-    // ===== CATEGORÍA SHOTS DULCES (Usada en Combo 9) =====
-    { type: 'shotDulce', name: 'Shot Dulce - Lemon Pie 🆕', price: 180 },
-    { type: 'shotDulce', name: 'Shot Dulce - Chocotorta 🆕', price: 180 },
-    { type: 'shotDulce', name: 'Shot Dulce - Red Velvet 🆕', price: 180 },
-
-    // ===== CATEGORÍA BEBIDAS SIMPLES (Usada en Combo 8 y 9) =====
-    { type: 'bebidaSimple', name: 'Agua Mineral', price: 0 },
-    { type: 'bebidaSimple', name: 'Gaseosa Light', price: 0 },
-    { type: 'bebidaSimple', name: 'Gaseosa Común', price: 0 },
-];
-
-// Definición de paquetes base (Combos actualizados con precio POR PERSONA)
-const getDefaultPackages = () => [
-  { 
-    id: 'C1', 
-    name: '1. Coffee Break (Simple)', 
-    description: 'Infusiones, jugo y agua.', 
-    basePrice: 2860,
-    attendeesBase: 1, 
-    hasNespressoOption: true,
-  },
-  { 
-    id: 'C1N', 
-    name: '1. Coffee Break (con NESPRESSO)', 
-    description: 'Nespresso, infusiones, jugo y agua.', 
-    basePrice: 4420,
-    attendeesBase: 1, 
-    isNespresso: true,
-  },
-  { 
-    id: 'C2', 
-    name: '2. Coffee Break + 2 Facturas', 
-    description: 'Infusiones, jugo y agua + 2 Facturas.', 
-    basePrice: 4940,
-    attendeesBase: 1,
-    bocadoFacturaCount: 2,
-    hasNespressoOption: true,
-  },
-  { 
-    id: 'C2N', 
-    name: '2. Coffee Break + 2 Facturas (con NESPRESSO)', 
-    description: 'Nespresso, infusiones, jugo y agua + 2 Facturas.', 
-    basePrice: 7280,
-    attendeesBase: 1,
-    bocadoFacturaCount: 2,
-    isNespresso: true,
-  },
-  {
-    id: 'C3',
-    name: '3. Coffee Break + 2 Bocados Simples (Mixto)',
-    description: 'Infusiones, jugo y agua + 2 bocados simples (Dulce y/o Salado).',
-    basePrice: 6760,
-    attendeesBase: 1,
-    bocadoSimpleTotalCount: 2, // Total compartido entre dulces y salados
-    hasNespressoOption: true,
-  },
-  {
-    id: 'C3N',
-    name: '3. Coffee Break + 2 Bocados Simples (con NESPRESSO)',
-    description: 'Nespresso, infusiones, jugo y agua + 2 bocados simples (Dulce y/o Salado).',
-    basePrice: 8515,
-    attendeesBase: 1,
-    bocadoSimpleTotalCount: 2, // Total compartido entre dulces y salados
-    isNespresso: true,
-  },
-  {
-    id: 'C4',
-    name: '4. Coffee Break + 2 Bocados Especiales (Dulce y/o Salado)',
-    description: 'Infusiones, jugo y agua + 2 bocados especiales (Dulce y/o Salado).',
-    basePrice: 7540,
-    attendeesBase: 1,
-    bocadoEspecialTotalCount: 2,
-    hasNespressoOption: true,
-  },
-  {
-    id: 'C4N',
-    name: '4. Coffee Break + 2 Bocados Especiales (con NESPRESSO)',
-    description: 'Nespresso, infusiones, jugo y agua + 2 bocados especiales (Dulce y/o Salado).',
-    basePrice: 9815,
-    attendeesBase: 1,
-    bocadoEspecialTotalCount: 2,
-    isNespresso: true,
-  },
-  { 
-    id: 'C5', 
-    name: '5. Coffee Break + 2 Bocados Salados Especiales', 
-    description: 'Infusiones, jugo y agua + 2 bocados salados especiales.', 
-    basePrice: 8580,
-    attendeesBase: 1,
-    bocadoEspecialSaladoCount: 2,
-    hasNespressoOption: true,
-  },
-  { 
-    id: 'C5N', 
-    name: '5. Coffee Break + 2 Bocados Salados Especiales (con NESPRESSO)', 
-    description: 'Nespresso, infusiones, jugo y agua + 2 bocados salados especiales.', 
-    basePrice: 10920,
-    attendeesBase: 1,
-    bocadoEspecialSaladoCount: 2,
-    isNespresso: true,
-  },
-  {
-    id: 'C6N',
-    name: '6. Coffee Break (NESPRESSO) + 4 Bocados Especiales (Dulce y/o Salado)',
-    description: 'Nespresso, infusiones, jugo y agua + 4 bocados especiales (Dulce y/o Salado).',
-    basePrice: 10920,
-    attendeesBase: 1,
-    bocadoEspecialTotalCount: 4,
-    isNespresso: true,
-  },
-  {
-    id: 'C7N',
-    name: '7. Coffee Break (NESPRESSO) + 2 Empanadas + 2 Bocados',
-    description: 'Nespresso, infusiones, jugo y agua + 2 empanadas + 2 bocados (dulces y/o salados simples).',
-    basePrice: 12480,
-    attendeesBase: 1,
-    empanadaCount: 2,
-    bocadoSimpleTotalCount: 2,
-    isNespresso: true,
-  },
-  {
-    id: 'C8S',
-    name: '8. BIENVENIDA SIMPLE',
-    description: '1 bocado dulce simple + 3 bocados salados simples + 1 bebida (agua, gaseosa light o común).',
-    basePrice: 11375,
-    attendeesBase: 1,
-    bocadoSimpleCount: 1,
-    bocadoSaladoSimpleCount: 3,
-    bebidaSimpleCount: 1,
-  },
-  {
-    id: 'C9F',
-    name: '9. BIENVENIDA FULL',
-    description: 'Infusiones, jugo y agua + 2 bocados dulces esp. + 1 shot dulce + 5 bocados salados esp. + 1 bebida (agua, gaseosa light o común).',
-    basePrice: 24051,
-    attendeesBase: 1,
-    bocadoEspecialDulceCount: 2,
-    shotDulceCount: 1,
-    bocadoEspecialSaladoCount: 5,
-    bebidaSimpleCount: 1,
-    hasNespressoOption: true,
-  },
-  {
-    id: 'C9FN',
-    name: '9. BIENVENIDA FULL (con NESPRESSO)',
-    description: 'Nespresso, infusiones, jugo y agua + 2 bocados dulces esp. + 1 shot dulce + 5 bocados salados esp. + 1 bebida (agua, gaseosa light o común).',
-    basePrice: 26781,
-    attendeesBase: 1,
-    bocadoEspecialDulceCount: 2,
-    shotDulceCount: 1,
-    bocadoEspecialSaladoCount: 5,
-    bebidaSimpleCount: 1,
-    isNespresso: true,
-  },
-];
-
-// Definición de add-ons/extras actualizados
-const getDefaultAddons = () => [
-  { name: 'Yogurt Bebible Frutilla/Vainilla (Jarra x Litro)', price: 7150 },
-  { name: 'Agua Mineral (grande 1.5lts)', price: 2730 },
-  { name: 'Agua Mineral Chica', price: 1950 },
-  { name: 'Gaseosa (grande)', price: 5850 },
-  { name: 'Jugo Cepita x Litro', price: 3250 },
-  { name: 'Bocaditos Salados', price: 2860 },
-  { name: 'Bocaditos Dulces', price: 845 },
-  { name: 'Frutas', price: 1690 },
-  { name: 'Personal de Apoyo: Jornada 3 hs', price: 27301 },
-  { name: 'Personal de Apoyo: Jornada 6 hs', price: 29901 },
-  { name: 'Personal de Apoyo: Jornada 9 hs', price: 35101 },
-];
 
 // --- FUNCIONES DE UTILIDAD ---
 
@@ -544,10 +239,10 @@ const App = () => {
   const [message, setMessage] = useState('');
   const [showRegister, setShowRegister] = useState(false);
 
-  // Estados para precios dinámicos (cargados desde Firebase o valores por defecto)
-  const [menuItems, setMenuItems] = useState(getDefaultMenuItems());
-  const [packages, setPackages] = useState(getDefaultPackages());
-  const [addons, setAddons] = useState(getDefaultAddons());
+  // La carta de bocados es fija (viene del catálogo), solo los precios son dinámicos
+  const menuItems = MENU_ITEMS;
+  const [packages, setPackages] = useState(() => resolvePrices(null).packages);
+  const [addons, setAddons] = useState(() => resolvePrices(null).addons);
   const [pricesLoaded, setPricesLoaded] = useState(false);
 
   // SOLUCION: Calcular minDateString ANTES de usarlo en el estado inicial
@@ -580,78 +275,20 @@ const App = () => {
         const pricesDocRef = doc(firestore, 'prices', appId);
         const pricesSnap = await getDoc(pricesDocRef);
 
-        if (pricesSnap.exists()) {
-          const data = pricesSnap.data();
-          if (data.menuItems) setMenuItems(data.menuItems);
+        // La estructura sale siempre del catálogo; Firebase solo aporta precios.
+        const { packages, addons } = resolvePrices(
+          pricesSnap.exists() ? pricesSnap.data() : null
+        );
+        setPackages(packages);
+        setAddons(addons);
 
-          // Merge packages: actualizar propiedades de paquetes del código sin perder precios de Firebase
-          if (data.packages) {
-            const defaultPackages = getDefaultPackages();
-            const firebasePackages = data.packages;
-            const mergedPackages = firebasePackages.map(fbPkg => {
-              const defaultPkg = defaultPackages.find(dp => dp.id === fbPkg.id);
-              if (defaultPkg) {
-                // Usar precio de Firebase pero mantener propiedades del código
-                return { ...defaultPkg, basePrice: fbPkg.basePrice };
-              }
-              return fbPkg;
-            });
-
-            // Agregar paquetes nuevos que están en código pero no en Firebase
-            defaultPackages.forEach(defaultPkg => {
-              const exists = firebasePackages.some(fbPkg => fbPkg.id === defaultPkg.id);
-              if (!exists) {
-                mergedPackages.push(defaultPkg);
-                console.log(`✨ Nuevo paquete detectado: ${defaultPkg.name}`);
-              }
-            });
-
-            setPackages(mergedPackages);
-          } else {
-            setPackages(getDefaultPackages());
-          }
-
-          // Merge addons: mantener orden del código pero usar precios de Firebase
-          if (data.addons) {
-            const defaultAddons = getDefaultAddons();
-            const firebaseAddons = data.addons;
-
-            // Función para normalizar nombres (quita espacios extra y convierte a minúsculas)
-            const normalizeName = (name) => name.trim().toLowerCase().replace(/\s+/g, ' ');
-
-            // Crear un Map de Firebase por nombre normalizado para acceso rápido
-            const firebaseMap = new Map();
-            firebaseAddons.forEach(fbAddon => {
-              firebaseMap.set(normalizeName(fbAddon.name), fbAddon);
-            });
-
-            // Mantener orden del código, usar precio de Firebase si existe
-            const mergedAddons = defaultAddons.map(defaultAddon => {
-              const normalizedName = normalizeName(defaultAddon.name);
-              const firebaseAddon = firebaseMap.get(normalizedName);
-
-              if (firebaseAddon) {
-                // Usar precio de Firebase
-                return { ...defaultAddon, price: firebaseAddon.price };
-              } else {
-                // No existe en Firebase: usar valores por defecto
-                console.log(`✨ Nuevo adicional detectado: ${defaultAddon.name}`);
-                return defaultAddon;
-              }
-            });
-
-            setAddons(mergedAddons);
-          } else {
-            setAddons(getDefaultAddons());
-          }
-
-          console.log('✅ Precios cargados desde Firebase');
-        } else {
-          console.log('ℹ️ Usando precios por defecto (no hay datos en Firebase)');
+        const sinPrecio = [...packages, ...addons].filter(i => i.fromSeed).length;
+        if (sinPrecio > 0) {
+          console.warn(`⚠️ ${sinPrecio} ítems sin precio en Firebase, usando valor inicial del catálogo`);
         }
       } catch (error) {
         console.error('Error cargando precios desde Firebase:', error);
-        console.log('ℹ️ Usando precios por defecto debido a error');
+        console.log('ℹ️ Usando precios iniciales del catálogo debido a error');
       } finally {
         setPricesLoaded(true);
       }
