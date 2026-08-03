@@ -44,9 +44,9 @@ const AdminPanel = () => {
       if (!data) {
         setMessage({ type: 'info', text: 'No hay precios en Firebase todavía. Se muestran los valores iniciales del catálogo: revisalos y guardá.' });
       } else if (sinPrecio.length > 0) {
-        setMessage({ type: 'info', text: `⚠️ ${sinPrecio.length} ítem(s) sin precio guardado: ${sinPrecio.map((i) => i.name).join(', ')}. Se muestran con el valor inicial del catálogo, revisalos y guardá.` });
+        setMessage({ type: 'info', text: `${sinPrecio.length} ítem(s) sin precio guardado: ${sinPrecio.map((i) => i.name).join(', ')}. Se muestran con el valor inicial del catálogo, revisalos y guardá.` });
       } else {
-        setMessage({ type: 'success', text: 'Precios cargados correctamente' });
+        setMessage({ type: 'ok', text: 'Precios cargados correctamente' });
       }
     } catch (error) {
       console.error('Error cargando precios:', error);
@@ -67,10 +67,10 @@ const AdminPanel = () => {
       setPackages((prev) => prev.map(({ fromSeed, ...p }) => p));
       setAddons((prev) => prev.map(({ fromSeed, ...a }) => a));
       setLastUpdated(now);
-      setMessage({ type: 'success', text: '✅ Precios guardados exitosamente' });
+      setMessage({ type: 'ok', text: 'Precios guardados y publicados' });
     } catch (error) {
       console.error('Error guardando precios:', error);
-      setMessage({ type: 'error', text: '❌ Error al guardar precios: ' + error.message });
+      setMessage({ type: 'error', text: 'Error al guardar precios: ' + error.message });
     } finally {
       setSaving(false);
     }
@@ -107,7 +107,7 @@ const AdminPanel = () => {
   const applyPercentage = () => {
     const value = parseFloat(percentage);
     if (isNaN(value)) {
-      setMessage({ type: 'error', text: 'Ingrese un porcentaje válido' });
+      setMessage({ type: 'error', text: 'Ingresá un porcentaje válido' });
       return;
     }
 
@@ -129,46 +129,50 @@ const AdminPanel = () => {
       targets.push('extras');
     }
 
-    setMessage({ type: 'success', text: `✅ ${value}% aplicado a ${targets.join(' y ')}. Revisá los valores y guardá para publicarlos.` });
+    setMessage({ type: 'info', text: `${value}% aplicado a ${targets.join(' y ')}. Revisá los valores y guardá para publicarlos.` });
     setPercentage('');
   };
 
-  const formatDate = (iso) => {
-    if (!iso) return null;
-    return new Date(iso).toLocaleString('es-AR', { dateStyle: 'medium', timeStyle: 'short' });
-  };
+  const formatDate = (iso) => (
+    iso ? new Date(iso).toLocaleString('es-AR', { dateStyle: 'medium', timeStyle: 'short' }) : null
+  );
 
-  // Renderizar formulario de login
+  // --- Login ---------------------------------------------------------------
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 flex items-center justify-center p-4">
-        <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full">
-          <h1 className="text-3xl font-bold text-gray-800 mb-6 text-center">
-            🔐 Panel de Administración
-          </h1>
-          <form onSubmit={handleLogin} className="space-y-4">
+      <div className="ct-shell flex items-center justify-center p-4">
+        <div className="ct-panel w-full max-w-sm">
+          <div className="ct-bar">
+            <span className="ct-title">Acceso restringido</span>
+            <span className="ct-label-inv">DAF</span>
+          </div>
+          <form onSubmit={handleLogin} className="space-y-5 p-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Contraseña de Administrador
-              </label>
+              <h1 className="text-xl font-semibold tracking-tight text-neutral-900">
+                Panel de precios
+              </h1>
+              <p className="mt-1 text-sm text-neutral-500">
+                Ingresá la contraseña de administrador.
+              </p>
+            </div>
+
+            <label className="block">
+              <span className="ct-label">Contraseña</span>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                placeholder="Ingrese la contraseña"
+                className="ct-input mt-2"
+                placeholder="••••••••"
                 required
               />
-            </div>
+            </label>
+
             {message.type === 'error' && (
-              <div className="bg-red-50 text-red-700 p-3 rounded-lg text-sm">
-                {message.text}
-              </div>
+              <p className="ct-note font-medium">{message.text}</p>
             )}
-            <button
-              type="submit"
-              className="w-full bg-indigo-600 text-white py-2 px-4 rounded-lg hover:bg-indigo-700 transition-colors font-medium"
-            >
+
+            <button type="submit" className="ct-btn-solid w-full">
               Ingresar
             </button>
           </form>
@@ -177,173 +181,174 @@ const AdminPanel = () => {
     );
   }
 
+  // --- Panel ---------------------------------------------------------------
+  const pendientes = [...packages, ...addons].filter((i) => i.fromSeed).length;
+
   const saveButton = (
-    <button
-      onClick={savePricesToFirebase}
-      disabled={saving}
-      className="w-full bg-green-600 text-white py-3 px-6 rounded-lg hover:bg-green-700 transition-colors font-bold text-lg disabled:opacity-50"
-    >
-      {saving ? 'Guardando...' : '💾 GUARDAR TODOS LOS CAMBIOS'}
+    <button onClick={savePricesToFirebase} disabled={saving} className="ct-btn-solid w-full">
+      {saving ? 'Guardando…' : 'Guardar y publicar'}
     </button>
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 p-4">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-800">
-                ⚙️ Panel de Administración de Precios
-              </h1>
-              <p className="text-gray-600 mt-1">
-                {packages.length} paquetes y {addons.length} extras — se corresponden uno a uno con la lista de precios
-              </p>
-              <p className="text-sm text-gray-500 mt-1">
-                {lastUpdated
-                  ? `Última actualización: ${formatDate(lastUpdated)}`
-                  : 'Todavía no se guardó ninguna actualización'}
-              </p>
-            </div>
-            <button
-              onClick={handleLogout}
-              className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors"
-            >
-              Cerrar Sesión
+    <div className="ct-shell p-4 sm:p-8">
+      <div className="mx-auto max-w-6xl space-y-4">
+
+        {/* Chrome principal */}
+        <div className="ct-panel">
+          <div className="ct-bar">
+            <span className="ct-title">Panel de precios</span>
+            <button onClick={handleLogout} className="ct-btn-inv !px-3 !py-1.5">
+              Salir
             </button>
           </div>
 
-          {/* Mensajes */}
+          {/* Fila de lecturas */}
+          <dl className="grid grid-cols-2 divide-neutral-300 border-b border-neutral-300 sm:grid-cols-4 sm:divide-x">
+            <div className="px-4 py-3">
+              <dt className="ct-label">Paquetes</dt>
+              <dd className="ct-readout mt-1 text-2xl font-semibold">{packages.length}</dd>
+            </div>
+            <div className="border-l border-neutral-300 px-4 py-3 sm:border-l-0">
+              <dt className="ct-label">Extras</dt>
+              <dd className="ct-readout mt-1 text-2xl font-semibold">{addons.length}</dd>
+            </div>
+            <div className="border-t border-neutral-300 px-4 py-3 sm:border-t-0">
+              <dt className="ct-label">Sin guardar</dt>
+              <dd className="ct-readout mt-1 text-2xl font-semibold">{pendientes}</dd>
+            </div>
+            <div className="border-l border-t border-neutral-300 px-4 py-3 sm:border-t-0">
+              <dt className="ct-label">Última publicación</dt>
+              <dd className="mt-1 text-sm text-neutral-700">
+                {formatDate(lastUpdated) ?? '—'}
+              </dd>
+            </div>
+          </dl>
+
           {message.text && (
-            <div className={`mt-4 p-4 rounded-lg ${
-              message.type === 'success' ? 'bg-green-50 text-green-700' :
-              message.type === 'error' ? 'bg-red-50 text-red-700' :
-              'bg-blue-50 text-blue-700'
-            }`}>
-              {message.text}
+            <div className="px-4 pt-4">
+              <p className={message.type === 'error' ? 'ct-note-strong' : 'ct-note'}>
+                {message.text}
+              </p>
             </div>
           )}
 
-          <div className="mt-4">{saveButton}</div>
+          <div className="p-4">{saveButton}</div>
         </div>
 
         {loading ? (
-          <div className="bg-white rounded-lg shadow-lg p-12 text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Cargando precios...</p>
+          <div className="ct-panel px-6 py-16 text-center">
+            <div className="mx-auto h-6 w-6 animate-spin border-2 border-neutral-300 border-t-neutral-900" />
+            <p className="ct-label mt-4">Cargando precios</p>
           </div>
         ) : (
           <>
-            {/* Aplicar porcentaje masivo */}
-            <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-              <h2 className="text-2xl font-bold text-gray-800 mb-4">
-                📊 Aplicar Porcentaje Masivo
-              </h2>
-              <div className="grid md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Categoría
-                  </label>
+            {/* Porcentaje masivo */}
+            <div className="ct-panel">
+              <div className="ct-bar-sub">
+                <span className="ct-title text-neutral-900">Ajuste porcentual</span>
+              </div>
+              <div className="grid gap-4 p-4 md:grid-cols-[1fr_1fr_auto] md:items-end">
+                <label className="block">
+                  <span className="ct-label">Alcance</span>
                   <select
                     value={selectedCategory}
                     onChange={(e) => setSelectedCategory(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                    className="ct-input mt-2"
                   >
-                    <option value="all">🌐 Todos los Precios</option>
-                    <option value="packages">📦 Solo Paquetes</option>
-                    <option value="addons">➕ Solo Extras</option>
+                    <option value="all">Todos los precios</option>
+                    <option value="packages">Solo paquetes</option>
+                    <option value="addons">Solo extras</option>
                   </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Porcentaje (%)
-                  </label>
+                </label>
+                <label className="block">
+                  <span className="ct-label">Porcentaje</span>
                   <input
                     type="number"
                     value={percentage}
                     onChange={(e) => setPercentage(e.target.value)}
-                    placeholder="ej: 10 para +10%"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                    placeholder="10"
+                    className="ct-input-num mt-2"
                   />
-                </div>
-                <div className="flex items-end">
-                  <button
-                    onClick={applyPercentage}
-                    className="w-full bg-indigo-600 text-white py-2 px-4 rounded-lg hover:bg-indigo-700 transition-colors font-medium"
-                  >
-                    Aplicar
-                  </button>
-                </div>
+                </label>
+                <button onClick={applyPercentage} className="ct-btn-line h-[42px]">
+                  Aplicar
+                </button>
               </div>
-              <p className="text-sm text-gray-500 mt-2">
-                💡 Tip: Usa números positivos para aumentar (ej: 10) o negativos para reducir (ej: -5).
-                El porcentaje se aplica sobre los precios que ves acá abajo, que son los que están publicados.
+              <p className="border-t border-neutral-200 px-4 py-3 text-xs text-neutral-500">
+                Positivo aumenta, negativo reduce. Se aplica sobre los valores que ves abajo,
+                que son los que están publicados — no sobre la lista anterior.
               </p>
             </div>
 
             {/* Paquetes */}
-            <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-              <h2 className="text-2xl font-bold text-gray-800 mb-4">
-                📦 Paquetes / Combos ({packages.length})
-              </h2>
-              <div className="grid md:grid-cols-2 gap-4">
+            <div className="ct-panel">
+              <div className="ct-bar">
+                <span className="ct-title">Paquetes · precio por persona</span>
+                <span className="ct-readout text-sm text-neutral-400">{packages.length}</span>
+              </div>
+              <ul className="divide-y divide-neutral-200">
                 {packages.map((pkg, index) => (
-                  <div key={pkg.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex-1">
-                        <p className="font-semibold text-gray-800">{pkg.name}</p>
-                        <p className="text-sm text-gray-600">{pkg.description}</p>
-                      </div>
-                      {pkg.fromSeed && (
-                        <span className="ml-2 shrink-0 text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded">sin guardar</span>
-                      )}
+                  <li
+                    key={pkg.id}
+                    className="flex flex-wrap items-center gap-x-4 gap-y-3 px-4 py-3 transition hover:bg-neutral-50"
+                  >
+                    <span className="ct-readout w-12 shrink-0 text-xs font-semibold text-neutral-400">
+                      {pkg.id}
+                    </span>
+                    <div className="min-w-[14rem] flex-1">
+                      <p className="flex items-center gap-2 text-sm font-medium text-neutral-900">
+                        {pkg.name}
+                        {pkg.isNespresso && <span className="ct-chip text-neutral-500">Nespresso</span>}
+                        {pkg.fromSeed && <span className="ct-chip text-neutral-900">Sin guardar</span>}
+                      </p>
+                      <p className="mt-0.5 text-xs text-neutral-500">{pkg.description}</p>
                     </div>
-                    <div className="flex items-center gap-2 mt-3">
-                      <span className="text-gray-500 text-sm">Precio por persona:</span>
-                      <span className="text-gray-500">$</span>
+                    <label className="flex shrink-0 items-center gap-2">
+                      <span className="ct-label">$</span>
                       <input
                         type="number"
                         value={pkg.basePrice}
                         onChange={(e) => updatePackagePrice(index, e.target.value)}
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                        className="ct-input-num w-32 text-right"
                       />
-                    </div>
-                  </div>
+                    </label>
+                  </li>
                 ))}
-              </div>
+              </ul>
             </div>
 
-            {/* Extras/Add-ons */}
-            <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-              <h2 className="text-2xl font-bold text-gray-800 mb-4">
-                ➕ Extras / Add-ons ({addons.length})
-              </h2>
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {/* Extras */}
+            <div className="ct-panel">
+              <div className="ct-bar">
+                <span className="ct-title">Extras · precio por unidad</span>
+                <span className="ct-readout text-sm text-neutral-400">{addons.length}</span>
+              </div>
+              <ul className="divide-y divide-neutral-200">
                 {addons.map((addon, index) => (
-                  <div key={addon.name} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-                    <div className="flex items-start justify-between mb-2">
-                      <p className="text-sm text-gray-700 font-medium">{addon.name}</p>
-                      {addon.fromSeed && (
-                        <span className="ml-2 shrink-0 text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded">sin guardar</span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-gray-500">$</span>
+                  <li
+                    key={addon.name}
+                    className="flex flex-wrap items-center gap-x-4 gap-y-3 px-4 py-3 transition hover:bg-neutral-50"
+                  >
+                    <p className="min-w-[14rem] flex-1 text-sm font-medium text-neutral-900">
+                      {addon.name}
+                      {addon.fromSeed && <span className="ct-chip ml-2 text-neutral-900">Sin guardar</span>}
+                    </p>
+                    <label className="flex shrink-0 items-center gap-2">
+                      <span className="ct-label">$</span>
                       <input
                         type="number"
                         value={addon.price}
                         onChange={(e) => updateAddonPrice(index, e.target.value)}
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                        className="ct-input-num w-32 text-right"
                       />
-                    </div>
-                  </div>
+                    </label>
+                  </li>
                 ))}
-              </div>
+              </ul>
             </div>
 
-            {/* Botón de guardar inferior */}
-            <div className="bg-white rounded-lg shadow-lg p-6">{saveButton}</div>
+            <div className="ct-panel p-4">{saveButton}</div>
           </>
         )}
       </div>

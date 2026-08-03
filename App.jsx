@@ -32,78 +32,110 @@ const formatCurrency = (value) => {
 // --- COMPONENTES ---
 
 const LoadingSpinner = () => (
-  <div className="flex justify-center items-center p-4">
-    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-    </svg>
-    Cargando...
+  <div className="flex flex-col items-center justify-center gap-3 p-6">
+    <div className="h-6 w-6 animate-spin border-2 border-neutral-300 border-t-neutral-900" />
+    <span className="ct-label">Cargando</span>
   </div>
 );
 
-const OrderList = ({ orders, userEmail }) => {
-  if (!orders.length) {
-    return <p className="text-center text-gray-500 italic p-6">Aún no has realizado pedidos.</p>;
-  }
+// Encabezado de paso del formulario, numerado como un tablero
+const Step = ({ n, title, hint }) => (
+  <div className="flex items-baseline gap-3 border-b border-neutral-900 pb-2">
+    <span className="ct-readout text-xs font-semibold text-neutral-400">{n}</span>
+    <h3 className="ct-title text-neutral-900">{title}</h3>
+    {hint && <span className="ml-auto text-xs text-neutral-500">{hint}</span>}
+  </div>
+);
 
-  return (
-    <div className="space-y-4">
-      <h2 className="text-xl font-semibold text-gray-800 border-b pb-2 mb-4">Mis Pedidos ({orders.length})</h2>
-      {orders.map((order) => (
-        <div key={order.id} className="bg-white p-4 rounded-xl shadow-md border border-gray-100">
-          <div className="flex justify-between items-start mb-2">
-            <div>
-              <p className="text-lg font-bold text-indigo-600">{order.packageName}</p>
-              <p className="text-sm text-gray-500">
-                <span className="font-medium">Fecha:</span> {order.eventDate} a las {order.eventTime}
-              </p>
-              {order.eventLocation && order.eventLocation !== 'N/A' && (
-                <p className="text-sm text-gray-500">
-                  <span className="font-medium">Lugar:</span> {order.eventLocation}
-                </p>
-              )}
-              <p className="text-xs text-gray-500">
-                <span className="font-medium">Usuario:</span> <span className="text-indigo-400 text-[10px]">{userEmail}</span>
-              </p>
-            </div>
-            <p className="text-2xl font-extrabold text-green-600">{formatCurrency(order.totalPrice)}</p>
-          </div>
-          <p className="text-sm text-gray-700">Para <strong>{order.attendees}</strong> asistentes.</p>
-          
-          {order.selectedBocados && Object.keys(order.selectedBocados).length > 0 && (
-            <div className="mt-2 border-t pt-2">
-              <p className="text-sm font-semibold text-gray-700">Detalle de Bocados:</p>
-              <ul className="list-disc list-inside text-xs text-gray-600 ml-2">
-                {Object.entries(order.selectedBocados).map(([name, quantity]) => (
-                    quantity > 0 && <li key={name}>{quantity} unidades de {name}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {order.addons && order.addons.length > 0 && (
-            <div className="mt-2 border-t pt-2">
-              <p className="text-sm font-semibold text-gray-700">Extras:</p>
-              <ul className="list-disc list-inside text-xs text-gray-600 ml-2">
-                {order.addons.map((addon, index) => (
-                  <li key={index}>
-                    {addon.quantity} x {addon.name} ({formatCurrency(addon.quantity * addon.price)})
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-          {order.observations && (
-            <div className="mt-2 text-xs text-gray-500 italic">
-                <span className="font-semibold">Obs:</span> {order.observations}
-            </div>
-          )}
-          <p className="mt-2 text-xs text-right text-gray-400">Creado: {order.createdAt?.toDate ? order.createdAt.toDate().toLocaleDateString('es-AR') : 'Fecha no disponible'}</p>
-        </div>
-      ))}
+const OrderList = ({ orders, userEmail }) => (
+  <div className="ct-panel">
+    <div className="ct-bar">
+      <span className="ct-title">Mis pedidos</span>
+      <span className="ct-readout text-sm text-neutral-400">{orders.length}</span>
     </div>
-  );
-};
+
+    {!orders.length ? (
+      <p className="px-4 py-10 text-center text-sm text-neutral-500">
+        Todavía no hiciste pedidos.
+      </p>
+    ) : (
+      <ul className="divide-y divide-neutral-200">
+        {orders.map((order) => (
+          <li key={order.id} className="space-y-3 px-4 py-4">
+            <div className="flex items-start justify-between gap-3">
+              <p className="text-sm font-medium leading-snug text-neutral-900">{order.packageName}</p>
+              <p className="ct-readout shrink-0 text-lg font-semibold">
+                {formatCurrency(order.totalPrice)}
+              </p>
+            </div>
+
+            <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-xs">
+              <dt className="ct-label">Fecha</dt>
+              <dd className="ct-readout text-neutral-700">{order.eventDate} · {order.eventTime}</dd>
+
+              <dt className="ct-label">Pers.</dt>
+              <dd className="ct-readout text-neutral-700">{order.attendees}</dd>
+
+              {order.eventLocation && order.eventLocation !== 'N/A' && (
+                <>
+                  <dt className="ct-label">Lugar</dt>
+                  <dd className="text-neutral-700">{order.eventLocation}</dd>
+                </>
+              )}
+
+              <dt className="ct-label">Usuario</dt>
+              <dd className="truncate text-neutral-500">{userEmail}</dd>
+            </dl>
+
+            {order.selectedBocados && Object.values(order.selectedBocados).some((q) => q > 0) && (
+              <div className="border-t border-neutral-200 pt-3">
+                <p className="ct-label">Bocados</p>
+                <ul className="mt-1.5 space-y-0.5">
+                  {Object.entries(order.selectedBocados).map(([name, quantity]) => (
+                    quantity > 0 && (
+                      <li key={name} className="flex gap-2 text-xs text-neutral-600">
+                        <span className="ct-readout text-neutral-400">{String(quantity).padStart(2, '0')}</span>
+                        <span>{name}</span>
+                      </li>
+                    )
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {order.addons && order.addons.length > 0 && (
+              <div className="border-t border-neutral-200 pt-3">
+                <p className="ct-label">Extras</p>
+                <ul className="mt-1.5 space-y-0.5">
+                  {order.addons.map((addon, index) => (
+                    <li key={index} className="flex justify-between gap-2 text-xs text-neutral-600">
+                      <span>
+                        <span className="ct-readout text-neutral-400">{String(addon.quantity).padStart(2, '0')}</span>
+                        {' '}{addon.name}
+                      </span>
+                      <span className="ct-readout shrink-0">{formatCurrency(addon.quantity * addon.price)}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {order.observations && (
+              <p className="border-t border-neutral-200 pt-3 text-xs text-neutral-500">
+                <span className="ct-label">Obs</span>{' '}
+                {order.observations}
+              </p>
+            )}
+
+            <p className="ct-readout text-right text-[10px] text-neutral-400">
+              {order.createdAt?.toDate ? order.createdAt.toDate().toLocaleDateString('es-AR') : '—'}
+            </p>
+          </li>
+        ))}
+      </ul>
+    )}
+  </div>
+);
 
 // Componente para seleccionar bocados dentro de un combo
 const BocadoSelector = ({
@@ -172,60 +204,72 @@ const BocadoSelector = ({
         });
     };
 
+    const pad = (n) => String(n).padStart(2, '0');
+
     return (
-        <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-inner">
-            <h4 className="font-semibold text-gray-800 mb-2">
-                {title}
-                {sharedMaxTotalPerAttendee === 0 && (
-                    <span className={`text-xs ml-2 ${remaining === 0 ? 'text-red-500 font-bold' : 'text-indigo-600'}`}>
-                        ({currentTotalSelected} de {totalMax} unidades seleccionadas)
-                    </span>
-                )}
-                {sharedMaxTotalPerAttendee > 0 && (
-                    <span className={`text-xs ml-2 ${remaining === 0 ? 'text-red-500 font-bold' : 'text-orange-600'}`}>
-                        (Límite compartido: {currentTotalSelected} de {totalMax} unidades)
-                    </span>
-                )}
-            </h4>
+        <div className="ct-panel">
+            <div className="ct-bar-sub flex-wrap">
+                <span className="ct-title text-neutral-900">{title}</span>
+                {/* Contador tipo instrumento: seleccionadas / tope */}
+                <span
+                    className={`ct-readout px-2 py-0.5 text-xs font-semibold ${
+                        remaining === 0
+                            ? 'bg-neutral-950 text-white'
+                            : 'border border-neutral-300 text-neutral-600'
+                    }`}
+                >
+                    {pad(currentTotalSelected)} / {pad(totalMax)}
+                </span>
+            </div>
 
-            {sharedMaxTotalPerAttendee === 0 && (
-                <p className="text-xs text-gray-500 mb-3">
-                    Máximo de unidades <strong>TOTALES</strong> a elegir: <strong>{totalMax}</strong> (Base por asistente: {maxToUse} unidad/es)
-                </p>
-            )}
+            <p className="border-b border-neutral-200 px-4 py-2 text-xs text-neutral-500">
+                {sharedMaxTotalPerAttendee > 0
+                    ? `Límite compartido con otra categoría: ${totalMax} unidades en total (${maxToUse} por asistente).`
+                    : `Hasta ${totalMax} unidades en total (${maxToUse} por asistente).`}
+            </p>
 
-            {sharedMaxTotalPerAttendee > 0 && (
-                <p className="text-xs text-orange-600 font-semibold mb-3 bg-orange-50 p-2 rounded">
-                    ⚠️ Este selector comparte el límite total con otra categoría. Total disponible entre ambas categorías: <strong>{totalMax}</strong> unidades ({maxToUse} por asistente)
-                </p>
-            )}
-            
-            {availableItems.map((item) => (
-                <div key={item.name} className="flex justify-between items-center py-1.5 border-b border-gray-100 last:border-b-0">
-                    <p className="text-sm text-gray-700 flex-1">{item.name}</p>
-                    <div className="flex items-center space-x-2">
-                        <button
-                            type="button"
-                            onClick={() => handleBocadoChange(item.name, -1)}
-                            disabled={!formData.selectedBocados[item.name] || formData.selectedBocados[item.name] <= 0}
-                            className="p-1 bg-red-50 text-red-600 rounded-full w-6 h-6 flex items-center justify-center disabled:opacity-30 transition text-sm hover:bg-red-100"
+            <ul className="divide-y divide-neutral-100">
+                {availableItems.map((item) => {
+                    const quantity = formData.selectedBocados[item.name] || 0;
+                    return (
+                        <li
+                            key={item.name}
+                            className={`flex items-center justify-between gap-3 px-4 py-2 transition ${
+                                quantity > 0 ? 'bg-neutral-50' : ''
+                            }`}
                         >
-                            -
-                        </button>
-                        <span className="w-6 text-center text-sm font-bold text-gray-800">
-                            {formData.selectedBocados[item.name] || 0}
-                        </span>
-                        <button
-                            type="button"
-                            onClick={() => handleBocadoChange(item.name, 1)}
-                            disabled={remaining <= 0}
-                            className="p-1 bg-green-50 text-green-600 rounded-full w-6 h-6 flex items-center justify-center transition hover:bg-green-100 disabled:opacity-30 text-sm"
-                        >
-                            +
-                        </button>
-                    </div>
-                </div>
-            ))}
+                            <p className="flex-1 text-sm text-neutral-700">{item.name}</p>
+                            <div className="flex shrink-0 items-center gap-1.5">
+                                <button
+                                    type="button"
+                                    onClick={() => handleBocadoChange(item.name, -1)}
+                                    disabled={quantity <= 0}
+                                    className="ct-step h-7 w-7 text-sm"
+                                    aria-label={`Quitar ${item.name}`}
+                                >
+                                    −
+                                </button>
+                                <span
+                                    className={`ct-readout w-7 text-center text-sm ${
+                                        quantity > 0 ? 'font-semibold text-neutral-900' : 'text-neutral-400'
+                                    }`}
+                                >
+                                    {pad(quantity)}
+                                </span>
+                                <button
+                                    type="button"
+                                    onClick={() => handleBocadoChange(item.name, 1)}
+                                    disabled={remaining <= 0}
+                                    className="ct-step h-7 w-7 text-sm"
+                                    aria-label={`Agregar ${item.name}`}
+                                >
+                                    +
+                                </button>
+                            </div>
+                        </li>
+                    );
+                })}
+            </ul>
         </div>
     );
 };
@@ -548,7 +592,7 @@ const App = () => {
 
   if (loading || !isAuthReady) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="ct-shell flex items-center justify-center">
         <LoadingSpinner />
       </div>
     );
@@ -573,45 +617,49 @@ const App = () => {
   const selectedPackage = packages.find(p => p.id === formData.selectedPackageId);
   const needsBocadoSelection = Object.keys(selectedPackage || {}).some(key => key.includes('Count') && selectedPackage[key] > 0);
 
-  return (
-    <div className="min-h-screen bg-gray-100 p-4 sm:p-10 font-sans">
-      <div className="max-w-4xl mx-auto">
+  // El paso de bocados solo existe para algunos paquetes: numeramos corrido
+  // para que no queden huecos en la secuencia.
+  const stepExtras = needsBocadoSelection ? '05' : '04';
+  const stepObservaciones = needsBocadoSelection ? '06' : '05';
 
-        <header className="text-center mb-8 p-6 bg-white rounded-xl shadow-lg border-b-4 border-indigo-400">
-          <div className="flex justify-between items-center">
-            <div className="flex-1"></div>
-            <div className="flex-1 text-center">
-              <h1 className="text-3xl font-extrabold text-gray-900">
-                Sistema de Pedidos Coffee Break
+  return (
+    <div className="ct-shell p-4 sm:p-8">
+      <div className="mx-auto max-w-6xl space-y-4">
+
+        <header className="ct-panel">
+          <div className="ct-bar">
+            <span className="ct-title">Coffee Break · Pedidos</span>
+            <button onClick={handleLogout} className="ct-btn-inv !px-3 !py-1.5">
+              Salir
+            </button>
+          </div>
+          <div className="flex flex-wrap items-end justify-between gap-4 px-4 py-4">
+            <div>
+              <h1 className="text-2xl font-semibold tracking-tight text-neutral-900">
+                Armá tu pedido
               </h1>
-              <p className="text-gray-500 mt-2 text-sm">Organiza tu evento de manera rápida y sencilla.</p>
+              <p className="mt-1 text-sm text-neutral-500">
+                Elegí el paquete, los bocados y los extras. El total se actualiza a medida que cargás.
+              </p>
             </div>
-            <div className="flex-1 flex justify-end">
-              <button
-                onClick={handleLogout}
-                className="px-4 py-2 text-sm font-medium text-white bg-red-500 hover:bg-red-600 rounded-lg transition"
-              >
-                Cerrar Sesión
-              </button>
+            <div className="text-right">
+              <p className="ct-label">Usuario</p>
+              <p className="mt-0.5 text-sm text-neutral-700">{user.email}</p>
             </div>
           </div>
-          <p className="text-xs text-gray-400 mt-4">
-            Usuario: <span className="font-medium text-indigo-600">{user.email}</span>
-          </p>
         </header>
-        
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
-          <div className="lg:col-span-2 bg-white p-8 rounded-xl shadow-2xl space-y-8">
-            <h2 className="text-2xl font-bold text-gray-800 border-b pb-3">1. Configurar Pedido</h2>
 
-            <form onSubmit={handleSubmit} className="space-y-8">
-              
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-indigo-700">Detalles del Evento</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+
+          <div className="space-y-4 lg:col-span-2">
+            <form onSubmit={handleSubmit} className="space-y-4">
+
+              <div className="ct-panel space-y-5 p-4 sm:p-6">
+                <Step n="01" title="Datos del evento" />
+
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <label className="block">
-                    <span className="text-gray-700 font-medium text-sm">Fecha del Evento:</span>
+                    <span className="ct-label">Fecha</span>
                     <input
                       type="date"
                       name="eventDate"
@@ -619,33 +667,33 @@ const App = () => {
                       onChange={handleInputChange}
                       required
                       min={minDateString}
-                      className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm p-3 border focus:ring-indigo-500 focus:border-indigo-500"
+                      className="ct-input-num mt-2"
                     />
                   </label>
                   <label className="block">
-                    <span className="text-gray-700 font-medium text-sm">Hora del Evento:</span>
+                    <span className="ct-label">Hora</span>
                     <input
                       type="time"
                       name="eventTime"
                       value={formData.eventTime}
                       onChange={handleInputChange}
                       required
-                      className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm p-3 border focus:ring-indigo-500 focus:border-indigo-500"
+                      className="ct-input-num mt-2"
                     />
                   </label>
                   <label className="block md:col-span-2">
-                    <span className="text-gray-700 font-medium text-sm">Lugar del Evento:</span>
+                    <span className="ct-label">Lugar</span>
                     <input
                       type="text"
                       name="eventLocation"
                       value={formData.eventLocation}
                       onChange={handleInputChange}
                       placeholder="Ej: Sala de conferencias A, Piso 3"
-                      className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm p-3 border focus:ring-indigo-500 focus:border-indigo-500"
+                      className="ct-input mt-2"
                     />
                   </label>
                   <label className="block md:col-span-2">
-                    <span className="text-gray-700 font-medium text-sm">Cantidad de Asistentes:</span>
+                    <span className="ct-label">Cantidad de asistentes</span>
                     <input
                       type="number"
                       name="attendees"
@@ -653,71 +701,85 @@ const App = () => {
                       onChange={handleInputChange}
                       required
                       min="1"
-                      className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm p-3 border focus:ring-indigo-500 focus:border-indigo-500"
+                      className="ct-input-num mt-2"
                     />
                   </label>
                 </div>
-                
-                <h3 className="text-lg font-semibold text-indigo-700 pt-4 border-t">Información de Contacto</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <label className="block md:col-span-2">
-                        <span className="text-gray-700 font-medium text-sm">Email de Contacto (Obligatorio):</span>
-                        <input
-                            type="email"
-                            name="email"
-                            value={formData.email}
-                            onChange={handleInputChange}
-                            required
-                            placeholder="ejemplo@udesa.edu.ar"
-                            className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm p-3 border focus:ring-indigo-500 focus:border-indigo-500"
-                        />
-                    </label>
-                    <label className="block md:col-span-2">
-                        <span className="text-gray-700 font-medium text-sm">Nombre de Contacto (Opcional):</span>
-                        <input
-                            type="text"
-                            name="name"
-                            value={formData.name}
-                            onChange={handleInputChange}
-                            placeholder="Ej: Juan Pérez"
-                            className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm p-3 border focus:ring-indigo-500 focus:border-indigo-500"
-                        />
-                    </label>
+
+                <Step n="02" title="Contacto" />
+
+                <div className="grid grid-cols-1 gap-4">
+                  <label className="block">
+                    <span className="ct-label">Email · obligatorio</span>
+                    <input
+                      type="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      required
+                      placeholder="ejemplo@udesa.edu.ar"
+                      className="ct-input mt-2"
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="ct-label">Nombre · opcional</span>
+                    <input
+                      type="text"
+                      name="name"
+                      value={formData.name}
+                      onChange={handleInputChange}
+                      placeholder="Ej: Juan Pérez"
+                      className="ct-input mt-2"
+                    />
+                  </label>
                 </div>
               </div>
 
-              <div className="space-y-4 pt-4 border-t">
-                <h3 className="text-lg font-bold text-indigo-700">2. Paquete de Servicio (Precio por Persona)</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {packages.map((pkg) => (
-                    <div
-                      key={pkg.id}
-                      className={`p-4 border-2 rounded-xl cursor-pointer transition duration-150 ease-in-out ${
-                        formData.selectedPackageId === pkg.id
-                          ? 'border-indigo-500 bg-indigo-50 shadow-md'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                      onClick={() => setFormData(prev => ({ ...prev, selectedPackageId: pkg.id }))}
-                    >
-                      <p className="font-bold text-gray-800 flex justify-between items-center text-base">
-                        {pkg.name}
-                        {pkg.isNespresso && <span className='text-xs font-semibold bg-red-100 text-red-600 px-2 py-0.5 rounded-full'>NESPRESSO</span>}
-                      </p>
-                      <p className="text-xs text-gray-500 mt-1">{pkg.description}</p>
-                      <p className="text-xl font-extrabold text-green-700 mt-2">
-                        {formatCurrency(pkg.basePrice)} / pers.
-                      </p>
-                    </div>
-                  ))}
+              <div className="ct-panel space-y-5 p-4 sm:p-6">
+                <Step n="03" title="Paquete de servicio" hint="Precio por persona" />
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  {packages.map((pkg) => {
+                    const isOn = formData.selectedPackageId === pkg.id;
+                    return (
+                      <button
+                        type="button"
+                        key={pkg.id}
+                        onClick={() => setFormData(prev => ({ ...prev, selectedPackageId: pkg.id }))}
+                        aria-pressed={isOn}
+                        className={`ct-card flex flex-col ${isOn ? 'ct-card-on' : ''}`}
+                      >
+                        <span className="flex items-start justify-between gap-2">
+                          <span className="text-sm font-medium leading-snug">{pkg.name}</span>
+                          {pkg.isNespresso && (
+                            <span className={`ct-chip shrink-0 ${isOn ? 'text-neutral-400' : 'text-neutral-500'}`}>
+                              Nespresso
+                            </span>
+                          )}
+                        </span>
+                        <span className={`mt-1 text-xs ${isOn ? 'text-neutral-400' : 'text-neutral-500'}`}>
+                          {pkg.description}
+                        </span>
+                        <span className="ct-readout mt-3 text-lg font-semibold">
+                          {formatCurrency(pkg.basePrice)}
+                          <span className={`ml-1 text-xs font-normal ${isOn ? 'text-neutral-400' : 'text-neutral-500'}`}>
+                            /pers.
+                          </span>
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
               {needsBocadoSelection && (
-                <div className="space-y-4 pt-4 border-t p-6 bg-blue-50 rounded-xl border border-blue-200">
-                    <h3 className="text-lg font-bold text-blue-800">2b. Selección de Bocados ({formData.attendees} asistentes)</h3>
-                    <p className="text-sm text-blue-700 italic">Elige la variedad de bocados <strong>totales</strong> que incluye tu paquete. El límite se basa en <strong>unidades por asistente</strong>.</p>
+                <div className="ct-panel space-y-5 p-4 sm:p-6">
+                    <Step n="04" title="Selección de bocados" hint={`${formData.attendees} asistentes`} />
+                    <p className="text-sm text-neutral-500">
+                      Elegí la variedad incluida en tu paquete. El tope se calcula por unidades
+                      por asistente y ya está contemplado en el precio: los bocados no se cobran aparte.
+                    </p>
 
-                    <div className="space-y-4">
+                    <div className="space-y-3">
 
                         <BocadoSelector
                             title="Facturas (Medialunas, Libritos, etc.)"
@@ -811,112 +873,145 @@ const App = () => {
                 </div>
               )}
 
-              <div className="space-y-4 pt-4 border-t">
-                <h3 className="text-lg font-bold text-indigo-700">3. Extras Adicionales (Con Costo Extra)</h3>
-                <p className='text-sm text-gray-600'>Nota: El <strong>Personal de Apoyo</strong> solo permite seleccionar <strong>una</strong> opción.</p>
-                <div className="space-y-3">
+              <div className="ct-panel space-y-5 p-4 sm:p-6">
+                <Step n={stepExtras} title="Extras" hint="Se cobran aparte" />
+                <p className="text-sm text-neutral-500">
+                  El <strong className="font-medium text-neutral-900">personal de apoyo</strong> admite
+                  una sola opción.
+                </p>
+                <ul className="divide-y divide-neutral-200 border-y border-neutral-200">
                   {addons.map((addon) => {
                     const isSupportStaff = addon.name.startsWith('Personal de Apoyo');
+                    const quantity = formData.addonQuantities[addon.name] || 0;
                     return (
-                        <div key={addon.name} className="flex justify-between items-center bg-gray-50 p-3 rounded-lg border border-gray-200">
-                        <div className="flex-1">
-                            <p className="font-medium text-gray-700">{addon.name}</p>
-                            <p className="text-xs text-gray-500">{formatCurrency(addon.price)} / {isSupportStaff ? 'Servicio Único' : 'unidad'}</p>
+                      <li
+                        key={addon.name}
+                        className={`flex items-center justify-between gap-3 py-3 ${quantity > 0 ? 'bg-neutral-50' : ''}`}
+                      >
+                        <div className="flex-1 px-1">
+                          <p className="text-sm font-medium text-neutral-900">{addon.name}</p>
+                          <p className="ct-readout mt-0.5 text-xs text-neutral-500">
+                            {formatCurrency(addon.price)}
+                            <span className="ml-1">/ {isSupportStaff ? 'servicio' : 'unidad'}</span>
+                          </p>
                         </div>
-                        <div className="flex items-center space-x-2">
-                            <button
+                        <div className="flex shrink-0 items-center gap-1.5 px-1">
+                          <button
                             type="button"
                             onClick={() => handleAddonChange(addon.name, -1)}
-                            disabled={!formData.addonQuantities[addon.name] || formData.addonQuantities[addon.name] === 0}
-                            className="p-1 bg-red-50 text-red-600 rounded-full w-8 h-8 flex items-center justify-center disabled:opacity-50 transition hover:bg-red-100"
-                            >
-                            -
-                            </button>
-                            <span className="w-8 text-center font-bold text-gray-800">
-                            {formData.addonQuantities[addon.name] || 0}
-                            </span>
-                            <button
+                            disabled={quantity === 0}
+                            className="ct-step"
+                            aria-label={`Quitar ${addon.name}`}
+                          >
+                            −
+                          </button>
+                          <span
+                            className={`ct-readout w-8 text-center text-sm ${
+                              quantity > 0 ? 'font-semibold text-neutral-900' : 'text-neutral-400'
+                            }`}
+                          >
+                            {String(quantity).padStart(2, '0')}
+                          </span>
+                          <button
                             type="button"
                             onClick={() => handleAddonChange(addon.name, 1)}
                             disabled={isSupportStaff && Object.keys(formData.addonQuantities).some(key => key.startsWith('Personal de Apoyo') && formData.addonQuantities[key] > 0 && key !== addon.name)}
-                            className="p-1 bg-green-50 text-green-600 rounded-full w-8 h-8 flex items-center justify-center transition hover:bg-green-100 disabled:opacity-30"
-                            >
+                            className="ct-step"
+                            aria-label={`Agregar ${addon.name}`}
+                          >
                             +
-                            </button>
+                          </button>
                         </div>
-                        </div>
+                      </li>
                     );
                   })}
-                </div>
+                </ul>
               </div>
 
-              <label className="block pt-4 border-t">
-                <span className="text-gray-700 font-medium text-sm">4. Observaciones:</span>
+              <div className="ct-panel space-y-5 p-4 sm:p-6">
+                <Step n={stepObservaciones} title="Observaciones" hint="Opcional" />
                 <textarea
                   name="observations"
                   value={formData.observations}
                   onChange={handleInputChange}
                   rows="3"
                   placeholder="Ej: Necesitamos opciones sin gluten o el área de servicio es en el 3er piso."
-                  className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm p-3 border focus:ring-indigo-500 focus:border-indigo-500"
+                  className="ct-input resize-y"
                 ></textarea>
-              </label>
+              </div>
 
-              <div className="pt-4 border-t">
+              <div className="ct-panel space-y-4 p-4 sm:p-6">
                 {message && (
-                  <p className={`p-3 mb-4 rounded-xl text-sm font-bold ${message.startsWith('✅') ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                  <p className={message.startsWith('✅') ? 'ct-note' : 'ct-note-strong'}>
                     {message}
                   </p>
                 )}
                 <button
                   type="submit"
                   disabled={isSubmitting || formData.attendees <= 0 || !user}
-                  className="w-full py-4 px-4 border border-transparent rounded-xl shadow-lg text-lg font-bold text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 disabled:bg-indigo-300"
+                  className="ct-btn-solid w-full !py-4"
                 >
-                  {isSubmitting ? 'Enviando Pedido...' : `Enviar Pedido por ${formatCurrency(totalPrice)}`}
+                  {isSubmitting ? 'Enviando pedido…' : `Enviar pedido · ${formatCurrency(totalPrice)}`}
                 </button>
               </div>
             </form>
           </div>
-          
-          <div className="lg:col-span-1 space-y-8">
-            <div className="bg-white p-6 rounded-xl shadow-2xl sticky top-12 border-t-4 border-green-500">
-              <h2 className="text-2xl font-bold text-gray-800 mb-4 border-b pb-2">Resumen de Costos</h2>
-              
-              <div className="mb-4">
-                <p className="text-gray-500 text-sm">Paquete Seleccionado:</p>
-                <p className="text-lg font-semibold text-indigo-600">{selectedPackage?.name}</p>
-                <p className="text-xs text-gray-500 italic mt-1">
-                    Precio por persona: <strong>{formatCurrency(selectedPackage?.basePrice)}</strong>
+
+          <div className="space-y-4 lg:col-span-1">
+            {/* Resumen: la lectura principal del tablero */}
+            <div className="ct-panel sticky top-8">
+              <div className="ct-bar">
+                <span className="ct-title">Resumen</span>
+              </div>
+
+              <div className="border-b border-neutral-200 px-4 py-3">
+                <p className="ct-label">Paquete</p>
+                <p className="mt-1 text-sm font-medium leading-snug text-neutral-900">
+                  {selectedPackage?.name}
+                </p>
+                <p className="ct-readout mt-1 text-xs text-neutral-500">
+                  {formatCurrency(selectedPackage?.basePrice)} / pers.
                 </p>
               </div>
-              
-              <div className="space-y-2 border-t pt-4">
-                <div className="flex justify-between">
-                  <p className="text-sm font-medium text-gray-600">Costo Base ({formData.attendees} pers.):</p>
-                  <p className="text-sm font-medium text-gray-600">{formatCurrency((selectedPackage?.basePrice || 0) * formData.attendees)}</p>
+
+              <dl className="space-y-2 border-b border-neutral-200 px-4 py-3">
+                <div className="flex items-baseline justify-between gap-3">
+                  <dt className="text-xs text-neutral-600">
+                    Base · <span className="ct-readout">{formData.attendees}</span> pers.
+                  </dt>
+                  <dd className="ct-readout text-sm text-neutral-900">
+                    {formatCurrency((selectedPackage?.basePrice || 0) * formData.attendees)}
+                  </dd>
                 </div>
-                
+
                 {addons.filter(a => formData.addonQuantities[a.name] > 0).map(addon => (
-                  <div key={addon.name} className="flex justify-between text-sm">
-                    <p className="text-gray-600 italic">Extra {formData.addonQuantities[addon.name]}x {addon.name.split(':')[0]}:</p>
-                    <p className="font-medium text-gray-700">{formatCurrency(formData.addonQuantities[addon.name] * addon.price)}</p>
+                  <div key={addon.name} className="flex items-baseline justify-between gap-3">
+                    <dt className="text-xs text-neutral-600">
+                      <span className="ct-readout text-neutral-400">
+                        {String(formData.addonQuantities[addon.name]).padStart(2, '0')}
+                      </span>{' '}
+                      {addon.name.split(':')[0]}
+                    </dt>
+                    <dd className="ct-readout text-sm text-neutral-900">
+                      {formatCurrency(formData.addonQuantities[addon.name] * addon.price)}
+                    </dd>
                   </div>
                 ))}
+              </dl>
 
+              <div className="bg-neutral-950 px-4 py-4 text-white">
+                <p className="ct-label-inv">Total estimado</p>
+                <p className="ct-readout mt-1 text-3xl font-semibold tracking-tight">
+                  {formatCurrency(totalPrice)}
+                </p>
               </div>
-              
-              <div className="border-t mt-4 pt-4 flex justify-between items-center">
-                <p className="text-xl font-extrabold text-gray-800">TOTAL ESTIMADO:</p>
-                <p className="text-3xl font-extrabold text-green-600">{formatCurrency(totalPrice)}</p>
-              </div>
-              <p className="text-xs text-gray-400 mt-2 italic text-right">*El precio final puede variar tras la confirmación.</p>
-            </div>
-            
-            <div className="bg-white p-6 rounded-xl shadow-inner border border-gray-200">
-                <OrderList orders={orders} userEmail={user.email} />
+
+              <p className="px-4 py-2.5 text-[11px] text-neutral-500">
+                El precio final puede variar tras la confirmación.
+              </p>
             </div>
 
+            <OrderList orders={orders} userEmail={user.email} />
           </div>
 
         </div>

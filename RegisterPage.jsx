@@ -46,29 +46,33 @@ const RegisterPage = ({ onSwitchToLogin }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-white rounded-xl shadow-xl p-8">
-        <div className="text-center mb-6">
-          <h2 className="text-3xl font-bold text-gray-900">Sistema Coffee Break</h2>
-          <p className="text-gray-500 mt-2">Crear Cuenta</p>
+    <div className="ct-shell flex items-center justify-center p-4">
+      <div className="ct-panel w-full max-w-sm">
+        <div className="ct-bar">
+          <span className="ct-title">Coffee Break</span>
+          <span className="ct-label-inv">DAF</span>
         </div>
-        
-        <form onSubmit={handleRegister} className="space-y-4">
+
+        <form onSubmit={handleRegister} className="space-y-5 p-6">
+          <div>
+            <h1 className="text-xl font-semibold tracking-tight text-neutral-900">Crear cuenta</h1>
+            <p className="mt-1 text-sm text-neutral-500">Registrate para poder cargar pedidos.</p>
+          </div>
+
           <label className="block">
-            <span className="text-gray-700 font-medium">Email:</span>
+            <span className="ct-label">Email</span>
             <input
-            
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
               placeholder="tu-email@udesa.edu.ar"
-              className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm p-3 border focus:ring-indigo-500 focus:border-indigo-500"
+              className="ct-input mt-2"
             />
           </label>
-          
+
           <label className="block">
-            <span className="text-gray-700 font-medium">Contraseña:</span>
+            <span className="ct-label">Contraseña</span>
             <input
               type="password"
               value={password}
@@ -76,45 +80,37 @@ const RegisterPage = ({ onSwitchToLogin }) => {
               required
               minLength={6}
               placeholder="Mínimo 6 caracteres"
-              className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm p-3 border focus:ring-indigo-500 focus:border-indigo-500"
+              className="ct-input mt-2"
             />
           </label>
-          
+
           <label className="block">
-            <span className="text-gray-700 font-medium">Confirmar Contraseña:</span>
+            <span className="ct-label">Repetir contraseña</span>
             <input
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
-              placeholder="Repite tu contraseña"
-              className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm p-3 border focus:ring-indigo-500 focus:border-indigo-500"
+              placeholder="Repetí tu contraseña"
+              className="ct-input mt-2"
             />
           </label>
-          
-          {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-              <p className="text-red-700 text-sm">{error}</p>
-            </div>
-          )}
-          
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-3 px-4 border border-transparent rounded-lg shadow-sm text-base font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition"
-          >
-            {loading ? 'Registrando...' : 'Registrar'}
+
+          {error && <p className="ct-note font-medium">{error}</p>}
+
+          <button type="submit" disabled={loading} className="ct-btn-solid w-full">
+            {loading ? 'Registrando…' : 'Registrarme'}
           </button>
         </form>
-        
-        <div className="mt-6 text-center">
-          <p className="text-sm text-gray-600">
-            ¿Ya tienes cuenta?{' '}
-            <button 
-              onClick={onSwitchToLogin} 
-              className="font-medium text-indigo-600 hover:text-indigo-500 transition"
+
+        <div className="border-t border-neutral-200 px-6 py-4 text-center">
+          <p className="text-sm text-neutral-500">
+            ¿Ya tenés cuenta?{' '}
+            <button
+              onClick={onSwitchToLogin}
+              className="font-medium text-neutral-900 underline underline-offset-4 transition hover:text-neutral-600"
             >
-              Inicia sesión aquí
+              Iniciá sesión
             </button>
           </p>
         </div>
