@@ -1,28 +1,29 @@
 // ============================================================================
 // CATALOGO UNICO DE LA APP
 // ============================================================================
-// Fuente de verdad de la ESTRUCTURA: nombres, descripciones y composicion de
-// cada combo, y la carta de bocados. Lo importa tanto la web de pedidos
-// (App.jsx) como el panel de admin (AdminPanel.jsx), asi no hay dos copias
-// que se puedan desincronizar.
+// Fuente de verdad de la ESTRUCTURA de los combos: nombres, descripciones y
+// que categorias de bocado incluye cada uno. Lo importa tanto la web de
+// pedidos (App.jsx) como el panel de admin (AdminPanel.jsx), asi no hay dos
+// copias que se puedan desincronizar.
 //
 // Los PRECIOS VIGENTES viven en Firebase (documento `prices/{appId}`) y se
 // editan desde /admin. `seedPrice` es solo el valor inicial: se usa cuando
 // Firebase todavia no tiene un precio para ese item (alta nueva o primer
 // arranque). Nunca pisa un precio ya guardado.
 //
-// La DISPONIBILIDAD de cada bocado tambien vive en Firebase, como una lista de
-// articulos deshabilitados (`disabledItems`). Al ser una lista de excepciones,
-// todo lo que este en la carta arranca habilitado: dar de alta un bocado nuevo
-// no exige tocar el panel.
+// La CARTA DE BOCADOS se administra desde /admin: se puede renombrar, agregar,
+// eliminar y prender/apagar cada articulo, y eso se guarda en el mismo
+// documento de Firebase (`menuItems`). MENU_ITEMS de abajo es la semilla: lo
+// que se ofrece mientras nadie tocó el panel, y de donde salen las altas
+// nuevas hechas por codigo. Lo guardado siempre manda sobre la semilla.
 //
 // Precios semilla alineados con la lista ago-26.
 // ============================================================================
 
-// Carta de bocados. NO llevan precio: lo que el cliente elige dentro de su
-// combo ya esta incluido en el precio por persona del paquete, no se cobra
-// aparte. El costo unitario de cada bocado es informacion interna y no tiene
-// lugar en la app.
+// Semilla de la carta de bocados. NO llevan precio: lo que el cliente elige
+// dentro de su combo ya esta incluido en el precio por persona del paquete, no
+// se cobra aparte. El costo unitario de cada bocado es informacion interna y no
+// tiene lugar en la app.
 export const MENU_ITEMS = [
     // ===== CATEGORÍA FACTURAS (Usada en Combo 2) =====
     { type: 'bocadoFactura', name: 'Medialuna de Manteca 🆕' },
@@ -356,10 +357,30 @@ export const COUNT_ITEM_TYPES = {
   bebidaSimpleCount: ['bebidaSimple'],
 };
 
-// Identificador estable de un articulo. Va por tipo + nombre porque el mismo
+// Identificador de los articulos de la semilla: tipo + nombre, porque el mismo
 // bocado aparece en varias categorias (una medialuna puede ser "simple" y
-// "especial") y se habilita por separado en cada una.
+// "especial") y se administra por separado en cada una. Una vez creado, el id
+// no cambia mas: si desde /admin le cambian el nombre, el id sigue siendo el
+// original, y por eso el articulo se reconoce como el mismo de siempre.
 export const itemKey = (item) => `${item.type}::${item.name}`;
+
+// La carta de codigo, ya con su id. Es lo que se ofrece mientras nadie tocó el
+// panel, y de donde salen las altas nuevas hechas por codigo.
+const SEED_ITEMS = MENU_ITEMS.map((item) => ({ ...item, id: itemKey(item) }));
+
+let contadorAltas = 0;
+
+// Articulo nuevo creado desde el panel. El id no se deriva del nombre porque el
+// nombre todavia no existe y despues puede cambiar.
+export function newMenuItem(type) {
+  contadorAltas += 1;
+  return {
+    id: `custom::${type}::${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}-${contadorAltas}`,
+    type,
+    name: '',
+    enabled: true,
+  };
+}
 
 // Unidades que el cliente tiene que elegir por asistente para completar el
 // paquete. Un tope cuya categoria quedo sin articulos habilitados no se exige:
@@ -376,9 +397,67 @@ export function requiredUnitsPerAttendee(pkg, availableItems) {
 
 const normalize = (name) => name.trim().toLowerCase().replace(/\s+/g, ' ');
 
+// Reconstruye la carta a partir de lo guardado en Firebase. Lo guardado manda;
+// la semilla solo aporta los articulos que Firebase todavia no conoce.
+function resolveMenuItems(data) {
+  // Formato viejo: la carta salia entera del codigo y Firebase solo guardaba
+  // cuales estaban apagados.
+  if (!Array.isArray(data?.menuItems)) {
+    const disabled = new Set(data?.disabledItems ?? []);
+    return SEED_ITEMS.map((item) => ({ ...item, enabled: !disabled.has(item.id) }));
+  }
+
+  const guardados = data.menuItems
+    .filter((item) => item?.type && item?.name)
+    .map((item) => ({
+      id: item.id || itemKey(item),
+      type: item.type,
+      name: item.name,
+      enabled: item.enabled !== false,
+    }));
+
+  // Un articulo de la semilla que no esta guardado es un alta nueva del codigo:
+  // se suma solo, salvo que lo hayan eliminado desde el panel.
+  const conocidos = new Set(guardados.map((item) => item.id));
+  const eliminados = new Set(data.removedSeedItems ?? []);
+  const altas = SEED_ITEMS
+    .filter((item) => !conocidos.has(item.id) && !eliminados.has(item.id))
+    .map((item) => ({ ...item, enabled: true }));
+
+  return [...guardados, ...altas];
+}
+
+// Errores que impiden publicar la carta. El nombre es lo que ve el cliente y lo
+// que queda escrito en el pedido, asi que no puede faltar ni repetirse dentro
+// de una misma categoria.
+export function validateMenuItems(menuItems) {
+  const errores = [];
+  const labels = new Map(ITEM_CATEGORIES.map((c) => [c.type, c.label]));
+
+  const sinNombre = menuItems.filter((item) => !item.name.trim()).length;
+  if (sinNombre > 0) {
+    errores.push(`${sinNombre} artículo(s) sin nombre.`);
+  }
+
+  const vistos = new Set();
+  const repetidos = new Set();
+  for (const item of menuItems) {
+    const nombre = normalize(item.name);
+    if (!nombre) continue;
+    const clave = `${item.type}::${nombre}`;
+    if (vistos.has(clave)) repetidos.add(`${labels.get(item.type) ?? item.type}: ${item.name.trim()}`);
+    vistos.add(clave);
+  }
+  if (repetidos.size > 0) {
+    errores.push(`Nombres repetidos dentro de una categoría — ${[...repetidos].join('; ')}.`);
+  }
+
+  return errores;
+}
+
 // Combina la estructura del codigo con lo guardado en Firebase: precios y
-// articulos deshabilitados. Acepta tanto el formato nuevo (mapas de precios)
-// como el viejo (objetos completos), para que la migracion sea transparente.
+// carta de bocados. Acepta tanto el formato nuevo (mapas de precios) como el
+// viejo (objetos completos), para que la migracion sea transparente.
 export function resolveCatalog(data) {
   const pkgPrices = data?.packagePrices
     ?? Object.fromEntries((data?.packages ?? []).map((p) => [p.id, p.basePrice]));
@@ -401,22 +480,24 @@ export function resolveCatalog(data) {
     return { ...addon, price: hasStored ? stored : seedPrice, fromSeed: !hasStored };
   });
 
-  const disabled = new Set(data?.disabledItems ?? []);
-  const menuItems = MENU_ITEMS.map((item) => ({
-    ...item,
-    key: itemKey(item),
-    enabled: !disabled.has(itemKey(item)),
-  }));
-
-  return { packages, addons, menuItems };
+  return { packages, addons, menuItems: resolveMenuItems(data) };
 }
 
-// Reduce el estado del admin a lo unico que se persiste: precios y la lista de
-// articulos apagados.
+// Reduce el estado del admin a lo que se persiste: precios y carta de bocados.
+// Los articulos de la semilla que ya no estan en la carta se anotan aparte para
+// que no vuelvan a aparecer solos en la proxima carga.
 export function toStoredCatalog(packages, addons, menuItems) {
+  const vigentes = new Set(menuItems.map((item) => item.id));
+
   return {
     packagePrices: Object.fromEntries(packages.map((p) => [p.id, p.basePrice])),
     addonPrices: Object.fromEntries(addons.map((a) => [a.name, a.price])),
-    disabledItems: menuItems.filter((i) => !i.enabled).map((i) => i.key ?? itemKey(i)),
+    menuItems: menuItems.map(({ id, type, name, enabled }) => ({
+      id,
+      type,
+      name: name.trim(),
+      enabled,
+    })),
+    removedSeedItems: SEED_ITEMS.filter((item) => !vigentes.has(item.id)).map((item) => item.id),
   };
 }

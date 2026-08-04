@@ -6,7 +6,7 @@ Sistema completo para gestión de pedidos de Coffee Break para eventos, con inte
 
 - ✅ 15 tipos de combos diferentes (con y sin opciones Nespresso)
 - ✅ Sistema dinámico de selección de bocados por categorías
-- ✅ Panel `/admin` para editar precios y habilitar/deshabilitar los artículos que se ofrecen dentro de los paquetes
+- ✅ Panel `/admin` para editar precios y administrar la carta de los paquetes: renombrar, agregar, eliminar y habilitar/deshabilitar artículos
 - ✅ Cálculo automático de precios por asistente
 - ✅ Validaciones en tiempo real
 - ✅ Integración con Firebase Firestore para persistencia de datos

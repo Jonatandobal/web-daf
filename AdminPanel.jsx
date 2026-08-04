@@ -4,6 +4,8 @@ import { db as firestore, appId } from './firebase.js';
 import {
   resolveCatalog,
   toStoredCatalog,
+  validateMenuItems,
+  newMenuItem,
   ITEM_CATEGORIES,
   COUNT_ITEM_TYPES,
   PACKAGES,
@@ -75,6 +77,14 @@ const AdminPanel = () => {
   };
 
   const savePricesToFirebase = async () => {
+    // Una carta con nombres vacíos o repetidos rompe el pedido: se corrige antes
+    // de publicar, no después.
+    const errores = validateMenuItems(menuItems);
+    if (errores.length > 0) {
+      setMessage({ type: 'error', text: `No se publicó nada. ${errores.join(' ')}` });
+      return;
+    }
+
     setSaving(true);
     try {
       const now = new Date().toISOString();
@@ -87,6 +97,7 @@ const AdminPanel = () => {
 
       setPackages((prev) => prev.map(({ fromSeed, ...p }) => p));
       setAddons((prev) => prev.map(({ fromSeed, ...a }) => a));
+      setMenuItems((prev) => prev.map((item) => ({ ...item, name: item.name.trim() })));
       setLastUpdated(now);
       setMessage({ type: 'ok', text: 'Precios y artículos guardados y publicados' });
     } catch (error) {
@@ -125,10 +136,27 @@ const AdminPanel = () => {
     )));
   };
 
-  const toggleItem = (key) => {
+  const toggleItem = (id) => {
     setMenuItems((prev) => prev.map((item) => (
-      item.key === key ? { ...item, enabled: !item.enabled } : item
+      item.id === id ? { ...item, enabled: !item.enabled } : item
     )));
+  };
+
+  const renameItem = (id, name) => {
+    setMenuItems((prev) => prev.map((item) => (
+      item.id === id ? { ...item, name } : item
+    )));
+  };
+
+  const removeItem = (id) => {
+    setMenuItems((prev) => prev.filter((item) => item.id !== id));
+  };
+
+  // Alta nueva al final de su categoría, lista para que le escriban el nombre.
+  const addItem = (type) => {
+    const item = newMenuItem(type);
+    setMenuItems((prev) => [...prev, item]);
+    setTimeout(() => document.getElementById(`item-${item.id}`)?.focus(), 0);
   };
 
   // Prende o apaga una categoría entera de un saque.
@@ -221,9 +249,8 @@ const AdminPanel = () => {
 
   // Categorías que algún paquete necesita y quedaron sin un solo artículo
   // habilitado: ese paso del pedido queda vacío para el cliente.
-  const categoriasVacias = ITEM_CATEGORIES.filter((cat) => (
+  const categoriasVacias = menuItems.length === 0 ? [] : ITEM_CATEGORIES.filter((cat) => (
     TIPOS_USADOS_EN_PAQUETES.has(cat.type) &&
-    menuItems.some((i) => i.type === cat.type) &&
     !menuItems.some((i) => i.type === cat.type && i.enabled)
   ));
 
@@ -378,9 +405,10 @@ const AdminPanel = () => {
               </div>
 
               <p className="border-b border-neutral-200 px-4 py-3 text-xs text-neutral-500">
-                Lo que apagues acá deja de ofrecerse en la web de pedidos: el cliente no lo ve
-                ni lo puede elegir dentro de su combo. No cambia ningún precio — los bocados
-                ya están incluidos en el valor por persona del paquete.
+                Esta es la carta que ve el cliente dentro de su combo: se puede renombrar,
+                agregar y eliminar artículos, y apagar los que no se ofrecen por ahora sin
+                perderlos. Nada de esto cambia precios — los bocados ya están incluidos en el
+                valor por persona del paquete. Los cambios recién se aplican al publicar.
               </p>
 
               {categoriasVacias.length > 0 && (
@@ -398,7 +426,6 @@ const AdminPanel = () => {
                 <div className="divide-y divide-neutral-300 border border-neutral-300">
                   {ITEM_CATEGORIES.map((cat) => {
                     const items = menuItems.filter((i) => i.type === cat.type);
-                    if (items.length === 0) return null;
                     const activos = items.filter((i) => i.enabled).length;
 
                     return (
@@ -437,21 +464,23 @@ const AdminPanel = () => {
                         <ul className="divide-y divide-neutral-100 border-t border-neutral-300">
                           {items.map((item) => (
                             <li
-                              key={item.key}
-                              className={`flex items-center justify-between gap-3 px-4 py-2 transition ${
+                              key={item.id}
+                              className={`flex items-center justify-between gap-2 px-4 py-2 transition ${
                                 item.enabled ? '' : 'bg-neutral-50'
                               }`}
                             >
-                              <p
-                                className={`flex-1 text-sm ${
-                                  item.enabled
-                                    ? 'text-neutral-700'
-                                    : 'text-neutral-400 line-through'
+                              <input
+                                id={`item-${item.id}`}
+                                type="text"
+                                value={item.name}
+                                onChange={(e) => renameItem(item.id, e.target.value)}
+                                placeholder="Nombre del artículo"
+                                aria-label={`Nombre del artículo en ${cat.label}`}
+                                className={`ct-input !py-1.5 ${
+                                  item.enabled ? '' : 'text-neutral-400 line-through'
                                 }`}
-                              >
-                                {item.name}
-                              </p>
-                              <span className="ct-label w-16 shrink-0 text-right">
+                              />
+                              <span className="ct-label w-14 shrink-0 text-right">
                                 {item.enabled ? 'Activo' : 'Oculto'}
                               </span>
                               <button
@@ -459,12 +488,31 @@ const AdminPanel = () => {
                                 role="switch"
                                 aria-checked={item.enabled}
                                 aria-label={`${item.enabled ? 'Deshabilitar' : 'Habilitar'} ${item.name}`}
-                                onClick={() => toggleItem(item.key)}
+                                onClick={() => toggleItem(item.id)}
                                 className="ct-toggle"
                               />
+                              <button
+                                type="button"
+                                onClick={() => removeItem(item.id)}
+                                aria-label={`Eliminar ${item.name || 'artículo sin nombre'}`}
+                                title="Eliminar"
+                                className="ct-step h-7 w-7 text-sm"
+                              >
+                                ×
+                              </button>
                             </li>
                           ))}
                         </ul>
+
+                        <div className="border-t border-neutral-100 px-4 py-2">
+                          <button
+                            type="button"
+                            onClick={() => addItem(cat.type)}
+                            className="ct-btn-line !px-2 !py-1 !text-[10px]"
+                          >
+                            + Agregar artículo
+                          </button>
+                        </div>
                       </div>
                     );
                   })}
