@@ -126,6 +126,25 @@
            disabled:opacity-25 disabled:hover:border-neutral-300 disabled:hover:bg-white disabled:hover:text-neutral-900;
   }
 
+  /* Llave ON/OFF: rectilinea, como un interruptor de tablero */
+  .ct-toggle {
+    @apply relative inline-flex h-6 w-11 shrink-0 items-center border border-neutral-300 bg-white transition
+           hover:border-neutral-900;
+  }
+
+  .ct-toggle::after {
+    content: '';
+    @apply absolute left-0.5 h-4 w-4 bg-neutral-300 transition-all;
+  }
+
+  .ct-toggle[aria-checked='true'] {
+    @apply border-neutral-950 bg-neutral-950;
+  }
+
+  .ct-toggle[aria-checked='true']::after {
+    @apply left-6 bg-white;
+  }
+
   /* --- Selección --------------------------------------------------------- */
 
   .ct-card {

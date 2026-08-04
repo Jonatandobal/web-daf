@@ -1,7 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db as firestore, appId } from './firebase.js';
-import { resolvePrices, toPriceMaps } from './catalog.js';
+import {
+  resolveCatalog,
+  toStoredCatalog,
+  ITEM_CATEGORIES,
+  COUNT_ITEM_TYPES,
+  PACKAGES,
+} from './catalog.js';
+
+// Tipos de bocado que aparecen en algún paquete. Es fijo: sale del catálogo.
+const TIPOS_USADOS_EN_PAQUETES = new Set(
+  PACKAGES.flatMap((pkg) => (
+    Object.entries(COUNT_ITEM_TYPES)
+      .filter(([countKey]) => (pkg[countKey] || 0) > 0)
+      .flatMap(([, types]) => types)
+  ))
+);
 
 const AdminPanel = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -13,6 +28,8 @@ const AdminPanel = () => {
   // Precios editables. La estructura (nombres, combos) viene del catálogo.
   const [packages, setPackages] = useState([]);
   const [addons, setAddons] = useState([]);
+  // Carta de bocados con su bandera `enabled`: lo que se ofrece dentro de los paquetes.
+  const [menuItems, setMenuItems] = useState([]);
   const [lastUpdated, setLastUpdated] = useState(null);
 
   // Estados para aplicar porcentaje
@@ -35,9 +52,10 @@ const AdminPanel = () => {
       const docSnap = await getDoc(docRef);
       const data = docSnap.exists() ? docSnap.data() : null;
 
-      const resolved = resolvePrices(data);
+      const resolved = resolveCatalog(data);
       setPackages(resolved.packages);
       setAddons(resolved.addons);
+      setMenuItems(resolved.menuItems);
       setLastUpdated(data?.lastUpdated ?? null);
 
       const sinPrecio = [...resolved.packages, ...resolved.addons].filter((i) => i.fromSeed);
@@ -46,7 +64,7 @@ const AdminPanel = () => {
       } else if (sinPrecio.length > 0) {
         setMessage({ type: 'info', text: `${sinPrecio.length} ítem(s) sin precio guardado: ${sinPrecio.map((i) => i.name).join(', ')}. Se muestran con el valor inicial del catálogo, revisalos y guardá.` });
       } else {
-        setMessage({ type: 'ok', text: 'Precios cargados correctamente' });
+        setMessage({ type: 'ok', text: 'Precios y artículos cargados correctamente' });
       }
     } catch (error) {
       console.error('Error cargando precios:', error);
@@ -61,13 +79,16 @@ const AdminPanel = () => {
     try {
       const now = new Date().toISOString();
       const docRef = doc(firestore, 'prices', appId);
-      // Solo se persisten los precios: la estructura vive en catalog.js
-      await setDoc(docRef, { ...toPriceMaps(packages, addons), lastUpdated: now });
+      // Solo se persisten precios y disponibilidad: la estructura vive en catalog.js
+      await setDoc(docRef, {
+        ...toStoredCatalog(packages, addons, menuItems),
+        lastUpdated: now,
+      });
 
       setPackages((prev) => prev.map(({ fromSeed, ...p }) => p));
       setAddons((prev) => prev.map(({ fromSeed, ...a }) => a));
       setLastUpdated(now);
-      setMessage({ type: 'ok', text: 'Precios guardados y publicados' });
+      setMessage({ type: 'ok', text: 'Precios y artículos guardados y publicados' });
     } catch (error) {
       console.error('Error guardando precios:', error);
       setMessage({ type: 'error', text: 'Error al guardar precios: ' + error.message });
@@ -101,6 +122,19 @@ const AdminPanel = () => {
   const updateAddonPrice = (index, newPrice) => {
     setAddons((prev) => prev.map((addon, i) => (
       i === index ? { ...addon, price: parseFloat(newPrice) || 0 } : addon
+    )));
+  };
+
+  const toggleItem = (key) => {
+    setMenuItems((prev) => prev.map((item) => (
+      item.key === key ? { ...item, enabled: !item.enabled } : item
+    )));
+  };
+
+  // Prende o apaga una categoría entera de un saque.
+  const setCategoryEnabled = (type, enabled) => {
+    setMenuItems((prev) => prev.map((item) => (
+      item.type === type ? { ...item, enabled } : item
     )));
   };
 
@@ -183,6 +217,15 @@ const AdminPanel = () => {
 
   // --- Panel ---------------------------------------------------------------
   const pendientes = [...packages, ...addons].filter((i) => i.fromSeed).length;
+  const habilitados = menuItems.filter((i) => i.enabled).length;
+
+  // Categorías que algún paquete necesita y quedaron sin un solo artículo
+  // habilitado: ese paso del pedido queda vacío para el cliente.
+  const categoriasVacias = ITEM_CATEGORIES.filter((cat) => (
+    TIPOS_USADOS_EN_PAQUETES.has(cat.type) &&
+    menuItems.some((i) => i.type === cat.type) &&
+    !menuItems.some((i) => i.type === cat.type && i.enabled)
+  ));
 
   const saveButton = (
     <button onClick={savePricesToFirebase} disabled={saving} className="ct-btn-solid w-full">
@@ -197,27 +240,34 @@ const AdminPanel = () => {
         {/* Chrome principal */}
         <div className="ct-panel">
           <div className="ct-bar">
-            <span className="ct-title">Panel de precios</span>
+            <span className="ct-title">Panel de precios y artículos</span>
             <button onClick={handleLogout} className="ct-btn-inv !px-3 !py-1.5">
               Salir
             </button>
           </div>
 
           {/* Fila de lecturas */}
-          <dl className="grid grid-cols-2 divide-neutral-300 border-b border-neutral-300 sm:grid-cols-4 sm:divide-x">
+          <dl className="grid grid-cols-2 divide-x divide-y divide-neutral-300 border-b border-neutral-300 sm:grid-cols-4">
             <div className="px-4 py-3">
               <dt className="ct-label">Paquetes</dt>
               <dd className="ct-readout mt-1 text-2xl font-semibold">{packages.length}</dd>
             </div>
-            <div className="border-l border-neutral-300 px-4 py-3 sm:border-l-0">
+            <div className="px-4 py-3">
               <dt className="ct-label">Extras</dt>
               <dd className="ct-readout mt-1 text-2xl font-semibold">{addons.length}</dd>
             </div>
-            <div className="border-t border-neutral-300 px-4 py-3 sm:border-t-0">
+            <div className="px-4 py-3">
+              <dt className="ct-label">Artículos activos</dt>
+              <dd className="ct-readout mt-1 text-2xl font-semibold">
+                {habilitados}
+                <span className="text-base font-normal text-neutral-400">/{menuItems.length}</span>
+              </dd>
+            </div>
+            <div className="px-4 py-3">
               <dt className="ct-label">Sin guardar</dt>
               <dd className="ct-readout mt-1 text-2xl font-semibold">{pendientes}</dd>
             </div>
-            <div className="border-l border-t border-neutral-300 px-4 py-3 sm:border-t-0">
+            <div className="col-span-2 px-4 py-3 sm:col-span-4">
               <dt className="ct-label">Última publicación</dt>
               <dd className="mt-1 text-sm text-neutral-700">
                 {formatDate(lastUpdated) ?? '—'}
@@ -316,6 +366,110 @@ const AdminPanel = () => {
                   </li>
                 ))}
               </ul>
+            </div>
+
+            {/* Disponibilidad de artículos dentro de los paquetes */}
+            <div className="ct-panel">
+              <div className="ct-bar">
+                <span className="ct-title">Artículos de los paquetes</span>
+                <span className="ct-readout text-sm text-neutral-400">
+                  {habilitados}/{menuItems.length}
+                </span>
+              </div>
+
+              <p className="border-b border-neutral-200 px-4 py-3 text-xs text-neutral-500">
+                Lo que apagues acá deja de ofrecerse en la web de pedidos: el cliente no lo ve
+                ni lo puede elegir dentro de su combo. No cambia ningún precio — los bocados
+                ya están incluidos en el valor por persona del paquete.
+              </p>
+
+              {categoriasVacias.length > 0 && (
+                <div className="px-4 pt-4">
+                  <p className="ct-note-strong">
+                    {categoriasVacias.map((c) => c.label).join(', ')}
+                    {categoriasVacias.length === 1 ? ' quedó' : ' quedaron'} sin artículos
+                    habilitados. Los paquetes que incluyen esa categoría se van a pedir sin
+                    esa elección.
+                  </p>
+                </div>
+              )}
+
+              <div className="p-4">
+                <div className="divide-y divide-neutral-300 border border-neutral-300">
+                  {ITEM_CATEGORIES.map((cat) => {
+                    const items = menuItems.filter((i) => i.type === cat.type);
+                    if (items.length === 0) return null;
+                    const activos = items.filter((i) => i.enabled).length;
+
+                    return (
+                      <div key={cat.type}>
+                        <div className="ct-bar-sub flex-wrap !border-b-0">
+                          <span className="ct-title text-neutral-900">{cat.label}</span>
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={`ct-readout px-2 py-0.5 text-xs font-semibold ${
+                                activos === 0
+                                  ? 'bg-neutral-950 text-white'
+                                  : 'border border-neutral-300 text-neutral-600'
+                              }`}
+                            >
+                              {activos} / {items.length}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => setCategoryEnabled(cat.type, true)}
+                              disabled={activos === items.length}
+                              className="ct-btn-line !px-2 !py-1 !text-[10px]"
+                            >
+                              Todos
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setCategoryEnabled(cat.type, false)}
+                              disabled={activos === 0}
+                              className="ct-btn-line !px-2 !py-1 !text-[10px]"
+                            >
+                              Ninguno
+                            </button>
+                          </div>
+                        </div>
+
+                        <ul className="divide-y divide-neutral-100 border-t border-neutral-300">
+                          {items.map((item) => (
+                            <li
+                              key={item.key}
+                              className={`flex items-center justify-between gap-3 px-4 py-2 transition ${
+                                item.enabled ? '' : 'bg-neutral-50'
+                              }`}
+                            >
+                              <p
+                                className={`flex-1 text-sm ${
+                                  item.enabled
+                                    ? 'text-neutral-700'
+                                    : 'text-neutral-400 line-through'
+                                }`}
+                              >
+                                {item.name}
+                              </p>
+                              <span className="ct-label w-16 shrink-0 text-right">
+                                {item.enabled ? 'Activo' : 'Oculto'}
+                              </span>
+                              <button
+                                type="button"
+                                role="switch"
+                                aria-checked={item.enabled}
+                                aria-label={`${item.enabled ? 'Deshabilitar' : 'Habilitar'} ${item.name}`}
+                                onClick={() => toggleItem(item.key)}
+                                className="ct-toggle"
+                              />
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
 
             {/* Extras */}

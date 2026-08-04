@@ -11,6 +11,11 @@
 // Firebase todavia no tiene un precio para ese item (alta nueva o primer
 // arranque). Nunca pisa un precio ya guardado.
 //
+// La DISPONIBILIDAD de cada bocado tambien vive en Firebase, como una lista de
+// articulos deshabilitados (`disabledItems`). Al ser una lista de excepciones,
+// todo lo que este en la carta arranca habilitado: dar de alta un bocado nuevo
+// no exige tocar el panel.
+//
 // Precios semilla alineados con la lista ago-26.
 // ============================================================================
 
@@ -322,12 +327,59 @@ export const ADDONS = [
   { name: 'Personal de Apoyo: Jornada 9 hs', seedPrice: 35101 },
 ];
 
+// Categorias de la carta, en el orden en que se muestran en el panel de admin.
+// El `label` es como se llama la categoria de cara a quien administra; el
+// `type` es el que llevan los items de MENU_ITEMS.
+export const ITEM_CATEGORIES = [
+  { type: 'bocadoFactura', label: 'Facturas' },
+  { type: 'bocadoSimple', label: 'Bocados simples dulces' },
+  { type: 'bocadoSaladoSimple', label: 'Bocados simples salados' },
+  { type: 'bocadoEspecialDulce', label: 'Bocados especiales dulces' },
+  { type: 'bocadoEspecialSalado', label: 'Bocados especiales salados' },
+  { type: 'empanada', label: 'Empanadas' },
+  { type: 'shotDulce', label: 'Shots dulces' },
+  { type: 'bebidaSimple', label: 'Bebidas' },
+];
+
+// Que tipos de item sirve cada tope declarado en un paquete (`...Count`).
+// Los `...TotalCount` son topes compartidos entre dos categorias.
+export const COUNT_ITEM_TYPES = {
+  bocadoFacturaCount: ['bocadoFactura'],
+  empanadaCount: ['empanada'],
+  bocadoSimpleCount: ['bocadoSimple'],
+  bocadoSaladoSimpleCount: ['bocadoSaladoSimple'],
+  bocadoSimpleTotalCount: ['bocadoSimple', 'bocadoSaladoSimple'],
+  bocadoEspecialDulceCount: ['bocadoEspecialDulce'],
+  bocadoEspecialSaladoCount: ['bocadoEspecialSalado'],
+  bocadoEspecialTotalCount: ['bocadoEspecialDulce', 'bocadoEspecialSalado'],
+  shotDulceCount: ['shotDulce'],
+  bebidaSimpleCount: ['bebidaSimple'],
+};
+
+// Identificador estable de un articulo. Va por tipo + nombre porque el mismo
+// bocado aparece en varias categorias (una medialuna puede ser "simple" y
+// "especial") y se habilita por separado en cada una.
+export const itemKey = (item) => `${item.type}::${item.name}`;
+
+// Unidades que el cliente tiene que elegir por asistente para completar el
+// paquete. Un tope cuya categoria quedo sin articulos habilitados no se exige:
+// si no hay nada para elegir, no se puede pedir.
+export function requiredUnitsPerAttendee(pkg, availableItems) {
+  const typesConStock = new Set(availableItems.map((item) => item.type));
+
+  return Object.entries(COUNT_ITEM_TYPES).reduce((sum, [countKey, types]) => {
+    const count = pkg?.[countKey] || 0;
+    if (!count || !types.some((type) => typesConStock.has(type))) return sum;
+    return sum + count;
+  }, 0);
+}
+
 const normalize = (name) => name.trim().toLowerCase().replace(/\s+/g, ' ');
 
-// Combina la estructura del codigo con los precios guardados en Firebase.
-// Acepta tanto el formato nuevo (mapas de precios) como el viejo (objetos
-// completos), para que la migracion sea transparente.
-export function resolvePrices(data) {
+// Combina la estructura del codigo con lo guardado en Firebase: precios y
+// articulos deshabilitados. Acepta tanto el formato nuevo (mapas de precios)
+// como el viejo (objetos completos), para que la migracion sea transparente.
+export function resolveCatalog(data) {
   const pkgPrices = data?.packagePrices
     ?? Object.fromEntries((data?.packages ?? []).map((p) => [p.id, p.basePrice]));
 
@@ -349,13 +401,22 @@ export function resolvePrices(data) {
     return { ...addon, price: hasStored ? stored : seedPrice, fromSeed: !hasStored };
   });
 
-  return { packages, addons };
+  const disabled = new Set(data?.disabledItems ?? []);
+  const menuItems = MENU_ITEMS.map((item) => ({
+    ...item,
+    key: itemKey(item),
+    enabled: !disabled.has(itemKey(item)),
+  }));
+
+  return { packages, addons, menuItems };
 }
 
-// Reduce el estado del admin a lo unico que se persiste: los precios.
-export function toPriceMaps(packages, addons) {
+// Reduce el estado del admin a lo unico que se persiste: precios y la lista de
+// articulos apagados.
+export function toStoredCatalog(packages, addons, menuItems) {
   return {
     packagePrices: Object.fromEntries(packages.map((p) => [p.id, p.basePrice])),
     addonPrices: Object.fromEntries(addons.map((a) => [a.name, a.price])),
+    disabledItems: menuItems.filter((i) => !i.enabled).map((i) => i.key ?? itemKey(i)),
   };
 }

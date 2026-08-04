@@ -5,7 +5,7 @@ import { auth, db as firestore, appId } from './firebase.js';
 import LoginPage from './LoginPage.jsx';
 import RegisterPage from './RegisterPage.jsx';
 import AdminPanel from './AdminPanel.jsx';
-import { MENU_ITEMS, resolvePrices } from './catalog.js';
+import { resolveCatalog, requiredUnitsPerAttendee } from './catalog.js';
 
 // --- CONFIGURACIÓN DE DATA ---
 
@@ -178,6 +178,8 @@ const BocadoSelector = ({
     const remaining = totalMax - currentTotalSelected;
 
     if (maxToUse <= 0) return null;
+    // Categoría sin artículos habilitados desde /admin: no hay nada que elegir.
+    if (availableItems.length === 0) return null;
 
     const handleBocadoChange = (bocadoName, change) => {
         setFormData(prev => {
@@ -283,10 +285,13 @@ const App = () => {
   const [message, setMessage] = useState('');
   const [showRegister, setShowRegister] = useState(false);
 
-  // La carta de bocados es fija (viene del catálogo), solo los precios son dinámicos
-  const menuItems = MENU_ITEMS;
-  const [packages, setPackages] = useState(() => resolvePrices(null).packages);
-  const [addons, setAddons] = useState(() => resolvePrices(null).addons);
+  // La estructura de la carta viene del catálogo; Firebase aporta los precios y
+  // qué artículos están habilitados. Solo se ofrecen los habilitados.
+  const [menuItems, setMenuItems] = useState(() => (
+    resolveCatalog(null).menuItems.filter((item) => item.enabled)
+  ));
+  const [packages, setPackages] = useState(() => resolveCatalog(null).packages);
+  const [addons, setAddons] = useState(() => resolveCatalog(null).addons);
   const [pricesLoaded, setPricesLoaded] = useState(false);
 
   // SOLUCION: Calcular minDateString ANTES de usarlo en el estado inicial
@@ -319,12 +324,14 @@ const App = () => {
         const pricesDocRef = doc(firestore, 'prices', appId);
         const pricesSnap = await getDoc(pricesDocRef);
 
-        // La estructura sale siempre del catálogo; Firebase solo aporta precios.
-        const { packages, addons } = resolvePrices(
+        // La estructura sale siempre del catálogo; Firebase aporta precios y
+        // la lista de artículos deshabilitados desde /admin.
+        const { packages, addons, menuItems } = resolveCatalog(
           pricesSnap.exists() ? pricesSnap.data() : null
         );
         setPackages(packages);
         setAddons(addons);
+        setMenuItems(menuItems.filter(item => item.enabled));
 
         const sinPrecio = [...packages, ...addons].filter(i => i.fromSeed).length;
         if (sinPrecio > 0) {
@@ -496,10 +503,9 @@ const App = () => {
           quantity: formData.addonQuantities[addon.name]
         }));
       
-      // Calcular total de bocados requeridos sumando todos los counts del paquete
-      const totalBocadosRequired = Object.keys(selectedPackage)
-          .filter(key => key.includes('Count'))
-          .reduce((sum, key) => sum + (selectedPackage[key] || 0), 0) * formData.attendees;
+      // Total de bocados requeridos. Las categorías que quedaron sin artículos
+      // habilitados no se exigen: no hay nada para elegir ahí.
+      const totalBocadosRequired = requiredUnitsPerAttendee(selectedPackage, menuItems) * formData.attendees;
 
       // Calcular total de bocados seleccionados
       const allItemTypes = ['bocadoFactura', 'bocadoSimple', 'bocadoSaladoSimple', 'bocadoEspecialDulce', 'bocadoEspecialSalado', 'empanada', 'shotDulce', 'bebidaSimple'];
@@ -615,7 +621,9 @@ const App = () => {
   }
 
   const selectedPackage = packages.find(p => p.id === formData.selectedPackageId);
-  const needsBocadoSelection = Object.keys(selectedPackage || {}).some(key => key.includes('Count') && selectedPackage[key] > 0);
+  // Si el admin apagó todos los artículos de las categorías del paquete, no hay
+  // nada para elegir y el paso de bocados directamente no se muestra.
+  const needsBocadoSelection = requiredUnitsPerAttendee(selectedPackage, menuItems) > 0;
 
   // El paso de bocados solo existe para algunos paquetes: numeramos corrido
   // para que no queden huecos en la secuencia.
