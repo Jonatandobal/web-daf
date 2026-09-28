@@ -1,5 +1,6 @@
 // Vercel Serverless Function
-// Recibe el pedido desde App.jsx, lo guarda en Airtable y manda el email de confirmación
+// Recibe el pedido desde App.jsx, lo guarda en Airtable, lo manda a Blixi
+// (queda como pedido de catering del local UDESA) y manda el email de confirmación
 
 const AIRTABLE_API_KEY = process.env.AIRTABLE_API_KEY;
 const AIRTABLE_BASE_ID = process.env.AIRTABLE_BASE_ID;
@@ -7,6 +8,9 @@ const AIRTABLE_TABLE_NAME = process.env.AIRTABLE_TABLE_NAME || 'tblVtrGQ22DObyTk
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const FROM_EMAIL = process.env.FROM_EMAIL || 'DAF Coffee Break <noreply@somosdaf.com>';
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'administracion@somosdaf.com';
+// Blixi: https://<dominio>/api/catering/pedidos + el token de la fuente "Coffee Break UDESA".
+const BLIXI_CATERING_URL = process.env.BLIXI_CATERING_URL;
+const BLIXI_CATERING_TOKEN = process.env.BLIXI_CATERING_TOKEN;
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -23,6 +27,10 @@ export default async function handler(req, res) {
     // 1. Guardar en Airtable
     const airtableRecord = await saveToAirtable(order);
 
+    // 1b. Mandarlo a Blixi. Nunca frena el pedido: si Blixi no contesta, el
+    //     pedido ya está en Airtable y se puede reenviar con el backfill.
+    const blixi = await sendToBlixi(order);
+
     // 2. Enviar email de confirmación al cliente
     await sendConfirmationEmail(order);
 
@@ -32,6 +40,7 @@ export default async function handler(req, res) {
     return res.status(200).json({
       success: true,
       airtableId: airtableRecord.id,
+      blixi,
     });
   } catch (error) {
     console.error('Error en send-confirmation:', error);
@@ -96,6 +105,31 @@ async function saveToAirtable(order) {
   }
 
   return response.json();
+}
+
+async function sendToBlixi(order) {
+  if (!BLIXI_CATERING_URL || !BLIXI_CATERING_TOKEN) return { skipped: true };
+  if (!order.orderId) return { skipped: true, reason: 'sin orderId' };
+  try {
+    const response = await fetch(BLIXI_CATERING_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-blixi-catering-token': BLIXI_CATERING_TOKEN,
+      },
+      body: JSON.stringify(order),
+      signal: AbortSignal.timeout(8000),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      console.error('Blixi rechazó el pedido:', response.status, data);
+      return { ok: false, status: response.status };
+    }
+    return { ok: true, id: data.id, duplicado: data.duplicado };
+  } catch (error) {
+    console.error('No se pudo mandar el pedido a Blixi:', error.message);
+    return { ok: false, error: error.message };
+  }
 }
 
 async function sendConfirmationEmail(order) {
