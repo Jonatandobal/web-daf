@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db as firestore, appId } from './firebase.js';
+import { ADMIN_PASSWORD } from './adminAuth.js';
 import {
   resolveCatalog,
   toStoredCatalog,
@@ -37,9 +38,6 @@ const AdminPanel = () => {
   // Estados para aplicar porcentaje
   const [percentage, setPercentage] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
-
-  // Contraseña de admin (en producción esto debería estar en Firebase Auth)
-  const ADMIN_PASSWORD = 'admin123'; // Cambiar por una contraseña segura
 
   useEffect(() => {
     if (isAuthenticated) {

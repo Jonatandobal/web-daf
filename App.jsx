@@ -5,6 +5,8 @@ import { auth, db as firestore, appId } from './firebase.js';
 import LoginPage from './LoginPage.jsx';
 import RegisterPage from './RegisterPage.jsx';
 import AdminPanel from './AdminPanel.jsx';
+import BrutaAdmin from './BrutaAdmin.jsx';
+import BrutaOrder from './BrutaOrder.jsx';
 import { resolveCatalog, requiredUnitsPerAttendee } from './catalog.js';
 
 // --- CONFIGURACIÓN DE DATA ---
@@ -365,11 +367,13 @@ const App = () => {
       const q = query(ordersRef, orderBy('createdAt', 'desc'));
 
       const unsubscribe = onSnapshot(q, (snapshot) => {
-        const fetchedOrders = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-          createdAt: doc.data().createdAt, 
-        }));
+        const fetchedOrders = snapshot.docs
+          .filter(doc => doc.data().kind !== 'bruta') // los de BRUTA se ven en /bruta
+          .map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+            createdAt: doc.data().createdAt,
+          }));
         setOrders(fetchedOrders);
       }, (error) => {
         console.error("Error fetching orders:", error);
@@ -606,18 +610,30 @@ const App = () => {
 
   // Detectar si estamos en la ruta /admin ANTES de verificar autenticación
   const isAdminRoute = window.location.pathname === '/admin';
+  const isBrutaAdminRoute = window.location.pathname === '/admin/bruta';
+  // Portal de pizzas de BRUTA: /bruta, o directamente el host bruta.<dominio>
+  const isBrutaRoute = window.location.pathname === '/bruta'
+    || window.location.hostname.startsWith('bruta.');
 
   // Si estamos en la ruta /admin, mostrar el panel de administración
   if (isAdminRoute) {
     return <AdminPanel />;
   }
+  if (isBrutaAdminRoute) {
+    return <BrutaAdmin />;
+  }
 
   // Si no hay usuario autenticado, mostrar Login o Register
+  const authTitle = isBrutaRoute ? 'BRUTA · Pedidos' : 'Coffee Break';
   if (!user) {
     if (showRegister) {
-      return <RegisterPage onSwitchToLogin={() => setShowRegister(false)} />;
+      return <RegisterPage onSwitchToLogin={() => setShowRegister(false)} title={authTitle} />;
     }
-    return <LoginPage onSwitchToRegister={() => setShowRegister(true)} />;
+    return <LoginPage onSwitchToRegister={() => setShowRegister(true)} title={authTitle} />;
+  }
+
+  if (isBrutaRoute) {
+    return <BrutaOrder user={user} onLogout={handleLogout} />;
   }
 
   const selectedPackage = packages.find(p => p.id === formData.selectedPackageId);

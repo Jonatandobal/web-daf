@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from './firebase.js';
 
-const LoginPage = ({ onSwitchToRegister }) => {
+const LoginPage = ({ onSwitchToRegister, title = 'Coffee Break' }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -29,7 +29,7 @@ const LoginPage = ({ onSwitchToRegister }) => {
     <div className="ct-shell flex items-center justify-center p-4">
       <div className="ct-panel w-full max-w-sm">
         <div className="ct-bar">
-          <span className="ct-title">Coffee Break</span>
+          <span className="ct-title">{title}</span>
           <span className="ct-label-inv">DAF</span>
         </div>
 
