@@ -11,6 +11,10 @@ const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'administracion@somosdaf.com';
 // Blixi: https://<dominio>/api/catering/pedidos + el token de la fuente "Coffee Break UDESA".
 const BLIXI_CATERING_URL = process.env.BLIXI_CATERING_URL;
 const BLIXI_CATERING_TOKEN = process.env.BLIXI_CATERING_TOKEN;
+// Pizzas BRUTA (/bruta): fuente propia en Blixi, que las manda al local BRUTA.
+const BLIXI_BRUTA_TOKEN = process.env.BLIXI_BRUTA_TOKEN;
+
+const esBruta = (order) => order.brand === 'bruta';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -61,7 +65,7 @@ async function saveToAirtable(order) {
     ? Object.values(order.selectedBocados).reduce((a, b) => a + b, 0)
     : 0;
 
-  let descripcion = `Servicio principal: ${order.packageName} | Precio por persona: $${order.packagePricePerAttendee?.toLocaleString('es-AR')}`;
+  let descripcion = `Servicio principal: ${order.packageName} | ${esBruta(order) ? 'Precio por pizza' : 'Precio por persona'}: $${order.packagePricePerAttendee?.toLocaleString('es-AR')}`;
   if (bocadosText) {
     descripcion += ` | Bocados: ${bocadosText} | Total bocados: ${totalBocados} unidades`;
   }
@@ -73,7 +77,7 @@ async function saveToAirtable(order) {
     : `Precio total: $${order.totalPrice?.toLocaleString('es-AR')}`;
 
   const fields = {
-    'Tipo de servicio': order.packageName,
+    'Tipo de servicio': esBruta(order) ? `BRUTA · ${order.packageName}` : order.packageName,
     'Event ID': order.orderId || `EVT-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
     'Nombre': order.name || 'N/A',
     'Ubicacion': order.eventLocation || 'N/A',
@@ -108,14 +112,15 @@ async function saveToAirtable(order) {
 }
 
 async function sendToBlixi(order) {
-  if (!BLIXI_CATERING_URL || !BLIXI_CATERING_TOKEN) return { skipped: true };
+  const token = esBruta(order) ? BLIXI_BRUTA_TOKEN : BLIXI_CATERING_TOKEN;
+  if (!BLIXI_CATERING_URL || !token) return { skipped: true };
   if (!order.orderId) return { skipped: true, reason: 'sin orderId' };
   try {
     const response = await fetch(BLIXI_CATERING_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-blixi-catering-token': BLIXI_CATERING_TOKEN,
+        'x-blixi-catering-token': token,
       },
       body: JSON.stringify(order),
       signal: AbortSignal.timeout(8000),
@@ -157,7 +162,7 @@ async function sendConfirmationEmail(order) {
 
     <div style="background:#4f46e5; padding:32px 24px; text-align:center;">
       <h1 style="color:white; margin:0; font-size:24px;">¡Pedido confirmado!</h1>
-      <p style="color:#c7d2fe; margin:8px 0 0;">Coffee Break UDESA</p>
+      <p style="color:#c7d2fe; margin:8px 0 0;">${esBruta(order) ? 'Pizzas BRUTA' : 'Coffee Break UDESA'}</p>
     </div>
 
     <div style="padding:32px 24px;">
@@ -173,7 +178,7 @@ async function sendConfirmationEmail(order) {
         <table style="width:100%; border-collapse:collapse;">
           <tr><td style="color:#6b7280; padding:4px 0; width:40%;">Fecha:</td><td style="color:#111827; font-weight:600;">${formatDisplayDate(order.eventDate)} a las ${order.eventTime}</td></tr>
           ${order.eventLocation && order.eventLocation !== 'N/A' ? `<tr><td style="color:#6b7280; padding:4px 0;">Lugar:</td><td style="color:#111827;">${order.eventLocation}</td></tr>` : ''}
-          <tr><td style="color:#6b7280; padding:4px 0;">Asistentes:</td><td style="color:#111827; font-weight:600;">${order.attendees} personas</td></tr>
+          <tr><td style="color:#6b7280; padding:4px 0;">${esBruta(order) ? 'Pizzas' : 'Asistentes'}:</td><td style="color:#111827; font-weight:600;">${esBruta(order) ? totalPizzas(order) : `${order.attendees} personas`}</td></tr>
           <tr><td style="color:#6b7280; padding:4px 0;">Referencia:</td><td style="color:#111827; font-size:12px;">${order.orderId || 'N/A'}</td></tr>
         </table>
       </div>
@@ -183,8 +188,8 @@ async function sendConfirmationEmail(order) {
           Servicio contratado
         </h2>
         <p style="color:#111827; font-weight:600; margin:0 0 4px;">${order.packageName}</p>
-        <p style="color:#6b7280; font-size:14px; margin:0 0 12px;">$${order.packagePricePerAttendee?.toLocaleString('es-AR')} por persona</p>
-        ${bocadosHtml ? `<p style="color:#374151; font-weight:600; margin:12px 0 4px;">Bocados seleccionados:</p>${bocadosHtml}` : ''}
+        <p style="color:#6b7280; font-size:14px; margin:0 0 12px;">$${order.packagePricePerAttendee?.toLocaleString('es-AR')} por ${esBruta(order) ? 'pizza' : 'persona'}</p>
+        ${bocadosHtml ? `<p style="color:#374151; font-weight:600; margin:12px 0 4px;">${esBruta(order) ? 'Gustos seleccionados' : 'Bocados seleccionados'}:</p>${bocadosHtml}` : ''}
       </div>
 
       ${order.addons && order.addons.length > 0 ? `
@@ -211,7 +216,7 @@ async function sendConfirmationEmail(order) {
       <p style="color:#6b7280; font-size:13px; margin:0;">
         ¿Dudas o cambios? Respondé este email o contactanos a <a href="mailto:${ADMIN_EMAIL}" style="color:#4f46e5;">${ADMIN_EMAIL}</a>
       </p>
-      <p style="color:#9ca3af; font-size:11px; margin:8px 0 0;">DAF — Dirección de Administración y Finanzas, UDESA</p>
+      <p style="color:#9ca3af; font-size:11px; margin:8px 0 0;">${esBruta(order) ? 'DAF · Bruta' : 'DAF — Dirección de Administración y Finanzas, UDESA'}</p>
     </div>
   </div>
 </body>
@@ -235,7 +240,7 @@ async function sendAdminNotification(order) {
       <tr style="background:#f9fafb;"><td style="padding:8px; color:#6b7280; width:35%;">Cliente:</td><td style="padding:8px; font-weight:600;">${order.name || 'N/A'} (${order.email})</td></tr>
       <tr><td style="padding:8px; color:#6b7280;">Fecha:</td><td style="padding:8px;">${formatDisplayDate(order.eventDate)} a las ${order.eventTime}</td></tr>
       ${order.eventLocation && order.eventLocation !== 'N/A' ? `<tr style="background:#f9fafb;"><td style="padding:8px; color:#6b7280;">Lugar:</td><td style="padding:8px;">${order.eventLocation}</td></tr>` : ''}
-      <tr style="background:#f9fafb;"><td style="padding:8px; color:#6b7280;">Asistentes:</td><td style="padding:8px;">${order.attendees}</td></tr>
+      <tr style="background:#f9fafb;"><td style="padding:8px; color:#6b7280;">${esBruta(order) ? 'Pizzas' : 'Asistentes'}:</td><td style="padding:8px;">${esBruta(order) ? totalPizzas(order) : order.attendees}</td></tr>
       <tr><td style="padding:8px; color:#6b7280;">Servicio:</td><td style="padding:8px; font-weight:600;">${order.packageName}</td></tr>
       <tr style="background:#f9fafb;"><td style="padding:8px; color:#6b7280;">Total:</td><td style="padding:8px; font-weight:800; color:#059669; font-size:18px;">$${order.totalPrice?.toLocaleString('es-AR')}</td></tr>
       ${order.observations ? `<tr><td style="padding:8px; color:#6b7280;">Observaciones:</td><td style="padding:8px; color:#92400e;">${order.observations}</td></tr>` : ''}
@@ -247,7 +252,7 @@ async function sendAdminNotification(order) {
 
   await sendEmail({
     to: ADMIN_EMAIL,
-    subject: `[NUEVO PEDIDO] ${order.name || order.email} — ${formatDisplayDate(order.eventDate)} — $${order.totalPrice?.toLocaleString('es-AR')}`,
+    subject: `[NUEVO PEDIDO${esBruta(order) ? ' BRUTA' : ''}] ${order.name || order.email} — ${formatDisplayDate(order.eventDate)} — $${order.totalPrice?.toLocaleString('es-AR')}`,
     html,
   });
 }
@@ -268,6 +273,11 @@ async function sendEmail({ to, subject, html }) {
   }
 
   return response.json();
+}
+
+// Pizzas del pedido de Bruta: la suma de los gustos elegidos.
+function totalPizzas(order) {
+  return Object.values(order.selectedBocados || {}).reduce((a, b) => a + b, 0);
 }
 
 function formatTime12h(time24) {
