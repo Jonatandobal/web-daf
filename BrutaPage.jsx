@@ -32,6 +32,8 @@ const BrutaPage = ({ user, onLogout }) => {
     eventTime: '',
     eventLocation: '',
     observations: '',
+    billName: '',
+    billCuit: '',
   });
   const [cantidades, setCantidades] = useState(vacio);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -52,6 +54,17 @@ const BrutaPage = ({ user, onLogout }) => {
       setMessage('❌ Elegí al menos una pizza.');
       return;
     }
+    const cuit = form.billCuit.replace(/\D/g, '');
+    if (cuit && cuit.length !== 11) {
+      setMessage('❌ El CUIT tiene que tener 11 dígitos.');
+      return;
+    }
+    // Blixi lee los datos de facturación de las observaciones: el encargado los
+    // carga al confirmar la venta.
+    const facturar = cuit || form.billName.trim()
+      ? `Facturar a: ${form.billName.trim() || '(sin razón social)'} — CUIT ${cuit || '(sin CUIT)'}`
+      : '';
+    const observations = [facturar, form.observations.trim()].filter(Boolean).join('\n');
     setIsSubmitting(true);
     try {
       // Colección propia: el backfill de Coffee Break lee `artifacts/<appId>/users/`
@@ -73,7 +86,8 @@ const BrutaPage = ({ user, onLogout }) => {
         addons: pedido.addons,
         selectedBocados: pedido.gustos,
         totalPrice: pedido.total,
-        observations: form.observations,
+        observations,
+        billing: cuit || form.billName.trim() ? { name: form.billName.trim(), cuit } : null,
         status: 'Pendiente',
         userId: user.uid,
         userEmail: user.email,
@@ -98,7 +112,7 @@ const BrutaPage = ({ user, onLogout }) => {
       if (!res.ok) throw new Error('No pudimos registrar el pedido. Probá de nuevo en unos minutos.');
 
       setCantidades(vacio());
-      setForm((prev) => ({ ...prev, eventLocation: '', observations: '' }));
+      setForm((prev) => ({ ...prev, eventLocation: '', observations: '', billName: '', billCuit: '' }));
       setMessage(`✅ ¡Pedido realizado con éxito! Total: ${formatCurrency(pedido.total)}`);
     } catch (error) {
       console.error('Error al enviar el pedido de Bruta:', error);
@@ -191,8 +205,18 @@ const BrutaPage = ({ user, onLogout }) => {
             ))}
 
             <div className="ct-panel space-y-4 p-4 sm:p-6">
-              <Step n="05" title="Observaciones" />
-              <textarea name="observations" value={form.observations} onChange={onChange} rows={3} placeholder="Alergias, horario de entrega, datos de facturación (CUIT y razón social)…" className="ct-input" />
+              <Step n="05" title="Facturación y observaciones" />
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <label className="block">
+                  <span className="ct-label">Razón social · para la factura</span>
+                  <input type="text" name="billName" value={form.billName} onChange={onChange} placeholder="Ej: Empresa S.A." className="ct-input mt-2" />
+                </label>
+                <label className="block">
+                  <span className="ct-label">CUIT</span>
+                  <input type="text" inputMode="numeric" name="billCuit" value={form.billCuit} onChange={onChange} placeholder="30-12345678-9" className="ct-input-num mt-2" />
+                </label>
+              </div>
+              <textarea name="observations" value={form.observations} onChange={onChange} rows={3} placeholder="Alergias, horario de entrega, indicaciones…" className="ct-input" />
             </div>
 
             {message && <p className="text-sm text-neutral-800" role="status">{message}</p>}
