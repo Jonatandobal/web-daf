@@ -148,6 +148,8 @@ async function sendReminderEmail(fields) {
   const descripcion = fields['Descripcion de servicio'] || '';
   const adicional = fields['Adicional'] || '';
   const observaciones = fields['Observaciones'] || '';
+  // Los pedidos de /bruta se guardan con "BRUTA · " delante del servicio.
+  const esBruta = tipoServicio.startsWith('BRUTA');
 
   const html = `
 <!DOCTYPE html>
@@ -159,12 +161,12 @@ async function sendReminderEmail(fields) {
     <div style="background:#f59e0b; padding:32px 24px; text-align:center;">
       <p style="color:#78350f; font-size:32px; margin:0 0 8px;">⏰</p>
       <h1 style="color:white; margin:0; font-size:22px;">Recordatorio: tu evento es mañana</h1>
-      <p style="color:#fef3c7; margin:8px 0 0; font-size:14px;">Coffee Break UDESA</p>
+      <p style="color:#fef3c7; margin:8px 0 0; font-size:14px;">${esBruta ? 'Pizzas BRUTA' : 'Coffee Break UDESA'}</p>
     </div>
 
     <div style="padding:32px 24px;">
       <p style="color:#374151; font-size:16px; margin:0 0 24px;">
-        Hola <strong>${nombre}</strong>, te recordamos que mañana tenés programado un servicio de coffee break.
+        Hola <strong>${nombre}</strong>, te recordamos que mañana tenés programado ${esBruta ? 'tu pedido de pizzas BRUTA' : 'un servicio de coffee break'}.
       </p>
 
       <div style="background:#fffbeb; border-radius:8px; padding:20px; margin-bottom:24px; border:1px solid #fde68a;">
@@ -174,7 +176,7 @@ async function sendReminderEmail(fields) {
         <table style="width:100%; border-collapse:collapse; font-size:14px;">
           <tr><td style="color:#6b7280; padding:6px 0; width:35%;">Fecha y hora:</td><td style="color:#111827; font-weight:600;">${fechaCalendario} — ${hora}hs</td></tr>
           ${ubicacion && ubicacion !== 'N/A' ? `<tr><td style="color:#6b7280; padding:6px 0;">Lugar:</td><td style="color:#111827;">${ubicacion}</td></tr>` : ''}
-          <tr><td style="color:#6b7280; padding:6px 0;">Asistentes:</td><td style="color:#111827; font-weight:600;">${pax} personas</td></tr>
+          ${esBruta ? '' : `<tr><td style="color:#6b7280; padding:6px 0;">Asistentes:</td><td style="color:#111827; font-weight:600;">${pax} personas</td></tr>`}
           <tr><td style="color:#6b7280; padding:6px 0;">Servicio:</td><td style="color:#111827; font-weight:600;">${tipoServicio}</td></tr>
         </table>
       </div>
@@ -205,7 +207,7 @@ async function sendReminderEmail(fields) {
     </div>
 
     <div style="background:#f9fafb; padding:20px; text-align:center; border-top:1px solid #e5e7eb;">
-      <p style="color:#9ca3af; font-size:11px; margin:0;">DAF — Dirección de Administración y Finanzas, UDESA</p>
+      <p style="color:#9ca3af; font-size:11px; margin:0;">${esBruta ? 'DAF · Bruta' : 'DAF — Dirección de Administración y Finanzas, UDESA'}</p>
     </div>
   </div>
 </body>

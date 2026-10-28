@@ -5,6 +5,7 @@ import { auth, db as firestore, appId } from './firebase.js';
 import LoginPage from './LoginPage.jsx';
 import RegisterPage from './RegisterPage.jsx';
 import AdminPanel from './AdminPanel.jsx';
+import BrutaPage from './BrutaPage.jsx';
 import { resolveCatalog, requiredUnitsPerAttendee } from './catalog.js';
 
 // --- CONFIGURACIÓN DE DATA ---
@@ -618,6 +619,11 @@ const App = () => {
       return <RegisterPage onSwitchToLogin={() => setShowRegister(false)} />;
     }
     return <LoginPage onSwitchToRegister={() => setShowRegister(true)} />;
+  }
+
+  // /bruta: pizzas BRUTA para eventos. Misma cuenta, otra carta y otro local en Blixi.
+  if (window.location.pathname === '/bruta') {
+    return <BrutaPage user={user} onLogout={handleLogout} />;
   }
 
   const selectedPackage = packages.find(p => p.id === formData.selectedPackageId);
