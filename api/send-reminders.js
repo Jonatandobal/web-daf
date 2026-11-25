@@ -7,6 +7,10 @@ const AIRTABLE_TABLE_NAME = process.env.AIRTABLE_TABLE_NAME || 'tblVtrGQ22DObyTk
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const FROM_EMAIL = process.env.FROM_EMAIL || 'DAF Coffee Break <noreply@somosdaf.com>';
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'administracion@somosdaf.com';
+// Copia oculta de cada mail al cliente: salen por Resend y no quedan en los
+// "Enviados" de ninguna casilla de DAF.
+const COPIA_OCULTA = (process.env.COPIA_OCULTA_EMAILS || 'administracion@somosdaf.com,gestion@somosdaf.com')
+  .split(',').map((e) => e.trim()).filter(Boolean);
 const CRON_SECRET = process.env.CRON_SECRET;
 
 export default async function handler(req, res) {
@@ -216,6 +220,7 @@ async function sendReminderEmail(fields) {
   // Email al cliente
   await sendEmail({
     to: clientEmail,
+    bcc: COPIA_OCULTA,
     subject: `Recordatorio: tu coffee break es mañana — ${fechaCalendario}`,
     html,
   });
@@ -228,14 +233,15 @@ async function sendReminderEmail(fields) {
   });
 }
 
-async function sendEmail({ to, subject, html }) {
+async function sendEmail({ to, subject, html, bcc = [] }) {
+  const copias = bcc.filter((d) => d.toLowerCase() !== String(to).trim().toLowerCase());
   const response = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${RESEND_API_KEY}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ from: FROM_EMAIL, to, subject, html }),
+    body: JSON.stringify({ from: FROM_EMAIL, to, subject, html, ...(copias.length ? { bcc: copias } : {}) }),
   });
 
   if (!response.ok) {
